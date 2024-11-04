@@ -31,8 +31,8 @@ export const OPENAI_MODELS = [
 ];
 export const ANTHROPIC_MODELS = [
   {
-    name: "claude-3-haiku-20240307",
-    label: "Claude 3 Haiku",
+    name: "claude-3-5-haiku-20241022",
+    label: "Claude 3.5 Haiku",
   },
   // {
   //   name: "claude-3-5-sonnet-20240620",
