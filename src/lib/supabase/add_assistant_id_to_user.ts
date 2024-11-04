@@ -12,15 +12,18 @@ import { createSupabaseClient } from "./client";
 export async function addAssistantIdToUser(): Promise<void> {
   const hasCookieBeenSet = getCookie(HAS_ASSISTANT_COOKIE_BEEN_SET);
   if (hasCookieBeenSet === "true") {
+    console.log("Assistant ID cookie has already been set.");
     return;
   }
   const assistantIdCookie = getCookie(ASSISTANT_ID_COOKIE);
   if (!assistantIdCookie) {
+    console.log("No assistant ID cookie found.");
     return;
   }
 
   try {
     const supabase = createSupabaseClient();
+    console.log("Attempting to update user with assistant ID:", assistantIdCookie);
     // add ID to user data
     const { error } = await supabase.auth.updateUser({
       data: {
@@ -32,7 +35,8 @@ export async function addAssistantIdToUser(): Promise<void> {
     }
     // If successful, set cookie to true
     setCookie(HAS_ASSISTANT_COOKIE_BEEN_SET, "true");
-  } catch (_) {
-    console.error("Failed to update user with reflection ID.");
+    console.log("User updated successfully with assistant ID:", assistantIdCookie);
+  } catch (error) {
+    console.error("Failed to update user with reflection ID:", error);
   }
 }

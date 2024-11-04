@@ -14,11 +14,18 @@ export function useUser() {
 
     const supabase = createSupabaseClient();
 
-    const {
-      data: { user: supabaseUser },
-    } = await supabase.auth.getUser();
-    setUser(supabaseUser || undefined);
-    setLoading(false);
+    try {
+      console.log("Retrieving user");
+      const {
+        data: { user: supabaseUser },
+      } = await supabase.auth.getUser();
+      setUser(supabaseUser || undefined);
+      console.log("User retrieved successfully:", supabaseUser?.id);
+    } catch (error) {
+      console.error("Failed to retrieve user:", error);
+    } finally {
+      setLoading(false);
+    }
   }
 
   return {
