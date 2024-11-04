@@ -11,6 +11,7 @@ export function createClient() {
 
   const cookieStore = cookies();
 
+  console.log("Creating server-side Supabase client with URL:", process.env.NEXT_PUBLIC_SUPABASE_URL);
   return createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,

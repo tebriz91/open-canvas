@@ -10,9 +10,11 @@ async function shareRunWithRetry(
 ): Promise<string> {
   for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
     try {
+      console.log(`Attempting to share run with id ${runId}, attempt ${attempt}`);
       return await lsClient.shareRun(runId);
     } catch (error) {
       if (attempt === MAX_RETRIES) {
+        console.error(`Failed to share run with id ${runId} after ${MAX_RETRIES} attempts:\n`, error);
         throw error;
       }
       console.warn(
@@ -44,7 +46,9 @@ export async function POST(req: NextRequest) {
   });
 
   try {
+    console.log(`Starting run sharing process for runId: ${runId}`);
     const sharedRunURL = await shareRunWithRetry(lsClient, runId);
+    console.log(`Run sharing process completed successfully for runId: ${runId}`);
 
     return new NextResponse(JSON.stringify({ sharedRunURL }), {
       status: 200,

@@ -8,6 +8,7 @@ export function createSupabaseClient() {
     throw new Error("NEXT_PUBLIC_SUPABASE_ANON_KEY is not defined");
   }
 
+  console.log("Creating Supabase client with URL:", process.env.NEXT_PUBLIC_SUPABASE_URL);
   return createBrowserClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
