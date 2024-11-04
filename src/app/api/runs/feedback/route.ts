@@ -17,17 +17,19 @@ export async function POST(req: NextRequest) {
       apiKey: process.env.LANGCHAIN_API_KEY,
     });
 
+    console.log("Submitting feedback for runId:", runId, "with feedbackKey:", feedbackKey);
     const feedback = await lsClient.createFeedback(runId, feedbackKey, {
       score,
       comment,
     });
+    console.log("Feedback submitted successfully for runId:", runId, "with feedbackKey:", feedbackKey);
 
     return NextResponse.json(
       { success: true, feedback: feedback },
       { status: 200 }
     );
   } catch (error) {
-    console.error("Failed to process feedback request:", error);
+    console.error("Failed to submit feedback:", error);
 
     return NextResponse.json(
       { error: "Failed to submit feedback." },
@@ -58,6 +60,7 @@ export async function GET(req: NextRequest) {
       apiKey: process.env.LANGCHAIN_API_KEY,
     });
 
+    console.log("Retrieving feedback for runId:", runId, "with feedbackKey:", feedbackKey);
     const runFeedback: Feedback[] = [];
 
     const run_feedback = await lsClient.listFeedback({
@@ -68,6 +71,7 @@ export async function GET(req: NextRequest) {
     for await (const feedback of run_feedback) {
       runFeedback.push(feedback);
     }
+    console.log("Feedback retrieved successfully for runId:", runId, "with feedbackKey:", feedbackKey);
 
     return new NextResponse(
       JSON.stringify({

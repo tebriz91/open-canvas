@@ -24,6 +24,7 @@ export function useThread() {
   ): Promise<Thread | undefined> => {
     const client = createClient();
     try {
+      console.log("Creating thread with customModelName:", customModelName, "for userId:", userId);
       const thread = await client.threads.create({
         metadata: {
           supabase_user_id: userId,
@@ -34,6 +35,7 @@ export function useThread() {
       setCookie(THREAD_ID_COOKIE_NAME, thread.thread_id);
       setModelName(customModelName);
       await getUserThreads(userId);
+      console.log("Thread created successfully with threadId:", thread.thread_id);
       return thread;
     } catch (e) {
       console.error("Failed to create thread", e);
@@ -48,11 +50,13 @@ export function useThread() {
     }
     const client = createClient();
     try {
+      console.log("Creating assistant");
       const assistant = await client.assistants.create({
         graphId: "agent",
       });
       setAssistantId(assistant.assistant_id);
       setCookie(ASSISTANT_ID_COOKIE, assistant.assistant_id);
+      console.log("Assistant created successfully with assistantId:", assistant.assistant_id);
     } catch (e) {
       console.error("Failed to create assistant", e);
     }
@@ -61,6 +65,7 @@ export function useThread() {
   const getUserThreads = async (userId: string) => {
     setIsUserThreadsLoading(true);
     try {
+      console.log("Retrieving user threads for userId:", userId);
       const client = createClient();
 
       const userThreads = await client.threads.search({
@@ -77,7 +82,10 @@ export function useThread() {
           (thread) => thread.values && Object.keys(thread.values).length > 0
         );
         setUserThreads([...filteredThreads, lastInArray]);
+        console.log("User threads retrieved successfully for userId:", userId);
       }
+    } catch (e) {
+      console.error("Failed to retrieve user threads", e);
     } finally {
       setIsUserThreadsLoading(false);
     }
@@ -163,8 +171,10 @@ export function useThread() {
     };
 
     try {
+      console.log("Clearing threads with no values for userId:", userId);
       await fetchAndDeleteThreads();
       setCookie(HAS_EMPTY_THREADS_CLEARED_COOKIE, "true");
+      console.log("Threads with no values cleared successfully for userId:", userId);
     } catch (e) {
       console.error("Error fetching & deleting threads", e);
     }
@@ -172,11 +182,13 @@ export function useThread() {
 
   const getThreadById = async (id: string): Promise<Thread | undefined> => {
     try {
+      console.log("Retrieving thread with ID:", id);
       const client = createClient();
       const thread = await client.threads.get(id);
       if (thread.metadata && thread.metadata.customModelName) {
         setModelName(thread.metadata.customModelName as ALL_MODEL_NAMES);
       }
+      console.log("Thread retrieved successfully with ID:", id);
       return thread;
     } catch (e) {
       console.error(`Failed to get thread with ID ${id}`, e);
@@ -203,7 +215,9 @@ export function useThread() {
     }
     const client = createClient();
     try {
+      console.log("Deleting thread with ID:", id);
       await client.threads.delete(id);
+      console.log("Thread deleted successfully with ID:", id);
     } catch (e) {
       console.error(`Failed to delete thread with ID ${id}`, e);
     }

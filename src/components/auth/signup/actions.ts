@@ -20,13 +20,15 @@ export async function signup(input: SignupWithEmailInput, baseUrl: string) {
     },
   };
 
+  console.log("Attempting to sign up user with email:", input.email);
   const { error } = await supabase.auth.signUp(data);
 
   if (error) {
-    console.error(error);
+    console.error("Signup failed for user with email:", input.email, "Error:", error);
     redirect("/auth/signup?error=true");
   }
 
+  console.log("Signup successful for user with email:", input.email);
   // Users still need to confirm their email address.
   // This page will show a message to check their email.
   redirect("/auth/signup/success");

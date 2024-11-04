@@ -15,24 +15,35 @@ export async function GET(request: NextRequest) {
   const supabase = createClient();
 
   if (token_hash && type) {
+    console.log("Verifying OTP with token_hash:", token_hash, "and type:", type);
     const { error } = await supabase.auth.verifyOtp({
       type,
       token_hash,
     });
     if (!error) {
+      console.log("OTP verification successful, redirecting to:", next);
       // redirect user to specified redirect URL or root of app
       revalidatePath(next);
       redirect(next, RedirectType.push);
+    } else {
+      console.error("OTP verification failed:", error);
     }
   } else if (code) {
+    console.log("Exchanging code for session with code:", code);
     const { error } = await supabase.auth.exchangeCodeForSession(code);
     if (!error) {
+      console.log("Code exchange successful, redirecting to:", next);
       // redirect user to specified redirect URL or root of app
       revalidatePath(next);
       redirect(next, RedirectType.push);
+    } else {
+      console.error("Code exchange failed:", error);
     }
+  } else {
+    console.error("No valid token_hash, type, or code provided");
   }
 
   // redirect the user to an error page with some instructions
+  console.error("Redirecting to error page");
   redirect("/error");
 }

@@ -36,6 +36,7 @@ export function useFeedback(): UseFeedbackResult {
       setError(null);
 
       try {
+        console.log("Sending feedback for runId:", runId, "with feedbackKey:", feedbackKey);
         const res = await fetch("/api/runs/feedback", {
           method: "POST",
           body: JSON.stringify({ runId, feedbackKey, score, comment }),
@@ -45,9 +46,11 @@ export function useFeedback(): UseFeedbackResult {
         });
 
         if (!res.ok) {
+          console.error("Failed to send feedback for runId:", runId, "with feedbackKey:", feedbackKey);
           return;
         }
 
+        console.log("Feedback sent successfully for runId:", runId, "with feedbackKey:", feedbackKey);
         return (await res.json()) as FeedbackResponse;
       } catch (error) {
         console.error("Error sending feedback:", error);
@@ -70,14 +73,17 @@ export function useFeedback(): UseFeedbackResult {
       setIsLoading(true);
       setError(null);
       try {
+        console.log("Getting feedback for runId:", runId, "with feedbackKey:", feedbackKey);
         const res = await fetch(
           `/api/runs/feedback?runId=${encodeURIComponent(runId)}&feedbackKey=${encodeURIComponent(feedbackKey)}`
         );
 
         if (!res.ok) {
+          console.error("Failed to get feedback for runId:", runId, "with feedbackKey:", feedbackKey);
           return;
         }
 
+        console.log("Feedback retrieved successfully for runId:", runId, "with feedbackKey:", feedbackKey);
         return await res.json();
       } catch (error) {
         console.error("Error getting feedback:", error);

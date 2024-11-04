@@ -14,13 +14,15 @@ export async function login(input: LoginWithEmailInput) {
     password: input.password,
   };
 
+  console.log("Attempting to log in user with email:", input.email);
   const { error } = await supabase.auth.signInWithPassword(data);
 
   if (error) {
-    console.error(error);
+    console.error("Login failed for user with email:", input.email, "Error:", error);
     redirect("/auth/login?error=true");
   }
 
+  console.log("Login successful for user with email:", input.email);
   revalidatePath("/", "layout");
   redirect("/");
 }
