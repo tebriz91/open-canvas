@@ -1,6 +1,5 @@
 import {
   ALL_MODEL_NAMES,
-  ASSISTANT_ID_COOKIE,
   DEFAULT_MODEL_NAME,
   HAS_EMPTY_THREADS_CLEARED_COOKIE,
   THREAD_ID_COOKIE_NAME,
@@ -11,7 +10,6 @@ import { useState } from "react";
 import { createClient } from "./utils";
 
 export function useThread() {
-  const [assistantId, setAssistantId] = useState<string>();
   const [threadId, setThreadId] = useState<string>();
   const [userThreads, setUserThreads] = useState<Thread[]>([]);
   const [isUserThreadsLoading, setIsUserThreadsLoading] = useState(false);
@@ -42,6 +40,7 @@ export function useThread() {
     }
   };
 
+<<<<<<< HEAD
   const getOrCreateAssistant = async () => {
     const assistantIdCookie = getCookie(ASSISTANT_ID_COOKIE);
     if (assistantIdCookie) {
@@ -62,6 +61,8 @@ export function useThread() {
     }
   };
 
+=======
+>>>>>>> b3659d69911f30fed95af29d5c5e63a26a6361d5
   const getUserThreads = async (userId: string) => {
     setIsUserThreadsLoading(true);
     try {
@@ -225,7 +226,6 @@ export function useThread() {
 
   return {
     threadId,
-    assistantId,
     userThreads,
     isUserThreadsLoading,
     modelName,
@@ -236,7 +236,6 @@ export function useThread() {
     deleteThread,
     getThreadById,
     setThreadId,
-    getOrCreateAssistant,
     setModelName,
   };
 }
