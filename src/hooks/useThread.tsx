@@ -22,7 +22,12 @@ export function useThread() {
   ): Promise<Thread | undefined> => {
     const client = createClient();
     try {
-      console.log("Creating thread with customModelName:", customModelName, "for userId:", userId);
+      console.log(
+        "Creating thread with customModelName:",
+        customModelName,
+        "for userId:",
+        userId
+      );
       const thread = await client.threads.create({
         metadata: {
           supabase_user_id: userId,
@@ -33,14 +38,16 @@ export function useThread() {
       setCookie(THREAD_ID_COOKIE_NAME, thread.thread_id);
       setModelName(customModelName);
       await getUserThreads(userId);
-      console.log("Thread created successfully with threadId:", thread.thread_id);
+      console.log(
+        "Thread created successfully with threadId:",
+        thread.thread_id
+      );
       return thread;
     } catch (e) {
       console.error("Failed to create thread", e);
     }
   };
 
-<<<<<<< HEAD
   const getOrCreateAssistant = async () => {
     const assistantIdCookie = getCookie(ASSISTANT_ID_COOKIE);
     if (assistantIdCookie) {
@@ -55,14 +62,15 @@ export function useThread() {
       });
       setAssistantId(assistant.assistant_id);
       setCookie(ASSISTANT_ID_COOKIE, assistant.assistant_id);
-      console.log("Assistant created successfully with assistantId:", assistant.assistant_id);
+      console.log(
+        "Assistant created successfully with assistantId:",
+        assistant.assistant_id
+      );
     } catch (e) {
       console.error("Failed to create assistant", e);
     }
   };
 
-=======
->>>>>>> b3659d69911f30fed95af29d5c5e63a26a6361d5
   const getUserThreads = async (userId: string) => {
     setIsUserThreadsLoading(true);
     try {
@@ -175,7 +183,10 @@ export function useThread() {
       console.log("Clearing threads with no values for userId:", userId);
       await fetchAndDeleteThreads();
       setCookie(HAS_EMPTY_THREADS_CLEARED_COOKIE, "true");
-      console.log("Threads with no values cleared successfully for userId:", userId);
+      console.log(
+        "Threads with no values cleared successfully for userId:",
+        userId
+      );
     } catch (e) {
       console.error("Error fetching & deleting threads", e);
     }
