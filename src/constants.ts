@@ -46,15 +46,6 @@ export const ANTHROPIC_MODELS = [
   {
     name: "claude-3-5-haiku-20241022",
     label: "Claude 3.5 Haiku",
-<<<<<<< HEAD
-=======
-    isNew: false,
-  },
-  {
-    name: "claude-3-haiku-20240307",
-    label: "Claude 3 Haiku (old)",
-    isNew: false,
->>>>>>> b3659d69911f30fed95af29d5c5e63a26a6361d5
   },
   // {
   //   name: "claude-3-5-sonnet-20240620",
