@@ -27,91 +27,421 @@ Open Canvas is an open-source web application for collaborating with agents to b
 
 ```md
 src/
-├── app/                    # Next.js app directory
-│   ├── auth/              # Authentication routes
-│   ├── globals.css        # Global styles
-│   └── layout.tsx         # Root layout
-├── components/            # React components
-│   ├── artifacts/         # Artifact rendering components
-│   ├── auth/             # Authentication components
-│   ├── canvas/           # Main canvas components
-│   ├── chat-interface/   # Chat UI components
-│   └── ui/               # Reusable UI components
-├── contexts/             # React contexts
-├── hooks/               # Custom React hooks
-├── lib/                # Utility functions
-├── agent/              # AI agent configuration
-└── types/              # TypeScript type definitions
+├── app/ # Next.js app directory
+│ ├── api/
+│ ├── auth/ # Authentication routes
+│ ├── globals.css # Global styles
+│ └── layout.tsx # Root layout
+├── components/ # React components
+│ ├── artifacts/ # Artifact rendering components
+│ ├── auth/ # Authentication components
+│ ├── canvas/ # Main canvas components
+│ ├── chat-interface/ # Chat UI components
+│ └── ui/ # Reusable UI components
+├── contexts/ # React contexts
+├── hooks/ # Custom React hooks
+├── lib/ # Utility functions
+├── agent/ # AI agent configuration
+└── types/ # TypeScript type definitions
 ```
 
-## Core Components
+## Key components and flow of the system:
 
-### Canvas
+### Authentication Flow
 
-The main container component that orchestrates the entire application.
+The authentication is handled through Supabase, with middleware checking each request:
 
-Reference:
+```ts
+// src/lib/supabase/middleware.ts
+import { type NextRequest } from "next/server";
+import { updateSession } from "@/lib/supabase/middleware";
 
-```tsx
-// 19:110:src/components/canvas/canvas.tsx
-export function CanvasComponent() {
-  const { threadData, graphData, userData } = useGraphContext();
-  const { user } = userData;
-  const { threadId, clearThreadsWithNoValues, setModelName } = threadData;
-  const { setArtifact } = graphData;
-  const { toast } = useToast();
-  const [chatStarted, setChatStarted] = useState(false);
-  const [isEditing, setIsEditing] = useState(false);
+export async function middleware(request: NextRequest) {
+  return await updateSession(request);
+}
 
-  useEffect(() => {
-    if (!threadId || !user) return;
-    // Clear threads with no values
-    clearThreadsWithNoValues(user.id);
-  }, [threadId, user]);
+export const config = {
+  matcher: [
+    /*
+     * Match all request paths except for the ones starting with:
+     * - _next/static (static files)
+     * - _next/image (image optimization files)
+     * - favicon.ico (favicon file)
+     * Feel free to modify this pattern to include more paths.
+     */
+    "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
+  ],
+};
+```
 
-  const handleQuickStart = (
-    type: "text" | "code",
-    language?: ProgrammingLanguageOptions
-  ) => {
-    if (type === "code" && !language) {
-      toast({
-        title: "Language not selected",
-        description: "Please select a language to continue",
-        duration: 5000,
-      });
-      return;
-    }
-    setChatStarted(true);
+When a user logs in, the flow goes through:
 
-    let artifactContent: ArtifactCodeV3 | ArtifactMarkdownV3;
-    if (type === "code" && language) {
-      artifactContent = {
-        index: 1,
-        type: "code",
-        title: `Quick start ${type}`,
-        code: getLanguageTemplate(language),
-        language,
-      };
+```ts
+// src/app/auth/callback/route.ts
+export async function GET(request: Request) {
+  const { searchParams, origin } = new URL(request.url);
+  const code = searchParams.get("code");
+  // if "next" is in param, use it as the redirect URL
+  const next = searchParams.get("next") ?? "/";
+
+  if (code) {
+    const supabase = createClient();
+    console.log("Exchanging code for session with code:", code);
+    const { error } = await supabase.auth.exchangeCodeForSession(code);
+    if (!error) {
+      const forwardedHost = request.headers.get("x-forwarded-host"); // original origin before load balancer
+      const isLocalEnv = process.env.NODE_ENV === "development";
+      if (isLocalEnv) {
+        // we can be sure that there is no load balancer in between, so no need to watch for X-Forwarded-Host
+        console.log(
+          "Code exchange successful, redirecting to:",
+          `${origin}${next}`
+        );
+        return NextResponse.redirect(`${origin}${next}`);
+      } else if (forwardedHost) {
+        console.log(
+          "Code exchange successful, redirecting to:",
+          `https://${forwardedHost}${next}`
+        );
+        return NextResponse.redirect(`https://${forwardedHost}${next}`);
+      } else {
+        console.log(
+          "Code exchange successful, redirecting to:",
+          `${origin}${next}`
+        );
+        return NextResponse.redirect(`${origin}${next}`);
+      }
     } else {
-      artifactContent = {
-        index: 1,
-        type: "text",
-        title: `Quick start ${type}`,
-        fullMarkdown: "",
-      };
+      console.error("Code exchange failed:", error);
     }
+  }
 
-    const newArtifact: ArtifactV3 = {
-      currentIndex: 1,
-      contents: [artifactContent],
-    };
-    // Do not worry about existing items in state. This should
-    // never occur since this action can only be invoked if
-    // there are no messages/artifacts in the thread.
-    setArtifact(newArtifact);
-    setIsEditing(true);
+  // return the user to an error page with instructions
+  console.error("Code exchange failed, redirecting to error page");
+  return NextResponse.redirect(`${origin}/auth/auth-code-error`);
+}
+```
+
+Key aspects:
+
+- Session management on every request
+- Exclusion of static assets from authentication
+- Integration with Supabase authentication
+- Automatic session refresh
+
+### API Route Structure
+
+The main API route handler acts as a proxy between frontend and LangGraph:
+
+```ts
+// src/app/api/[..._path]/route.ts
+export async function handleRequest(req: NextRequest, method: string) {
+  // 1. Verify user authentication
+  const user = await verifyUserAuthenticated();
+  if (!user) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  // 2. Transform request path and params
+  const path = req.nextUrl.pathname.replace(/^\/?api\//, "");
+  const searchParams = new URLSearchParams(url.search);
+
+  // 3. Prepare request for LangGraph API
+  const options: RequestInit = {
+    method,
+    headers: {
+      "x-api-key": process.env.LANGCHAIN_API_KEY,
+    },
   };
 
+  // 4. Handle request body if POST/PUT/PATCH
+  if (["POST", "PUT", "PATCH"].includes(method)) {
+    const bodyText = await req.text();
+    if (bodyText) {
+      const parsedBody = JSON.parse(bodyText);
+      parsedBody.config = parsedBody.config || {};
+      parsedBody.config.configurable = {
+        ...parsedBody.config.configurable,
+        supabase_user_id: user.id,
+      };
+      options.body = JSON.stringify(parsedBody);
+    }
+  }
+
+  // 5. Forward to LangGraph and return response
+  const res = await fetch(
+    `${LANGGRAPH_API_URL}/${path}${queryString}`,
+    options
+  );
+  return new Response(res.body, {
+    status: res.status,
+    statusText: res.statusText,
+    headers: new Headers({
+      ...getCorsHeaders(),
+      ...res.headers,
+    }),
+  });
+}
+```
+
+### Client and Thread Management
+
+The system uses a client-side wrapper around the LangGraph SDK to manage communication:
+
+```ts
+// src/hooks/utils.ts
+export const createClient = () => {
+  const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3000/api";
+  return new Client({
+    apiUrl,
+  });
+};
+```
+
+#### Thread Management Hook (useThread)
+
+The `useThread` hook provides thread management functionality:
+
+```ts
+// src/hooks/useThread.tsx
+export function useThread() {
+  // State management for threads
+  const [threadId, setThreadId] = useState<string>();
+  const [userThreads, setUserThreads] = useState<Thread[]>([]);
+  const [modelName, setModelName] =
+    useState<ALL_MODEL_NAMES>(DEFAULT_MODEL_NAME);
+
+  // Key functionalities:
+  // 1. Create new threads
+  // 2. Fetch user's threads
+  // 3. Clean up empty threads
+  // 4. Delete threads
+  // 5. Thread search and retrieval
+}
+```
+
+Key features:
+
+- Thread creation with model selection
+- User-specific thread management
+- Automatic cleanup of empty threads
+- Thread search and deletion capabilities
+- Cookie-based thread ID persistence
+
+#### Store Management Hook (useStore)
+
+The `useStore` hook handles persistent storage operations:
+
+```ts
+// src/hooks/useStore.tsx
+export function useStore() {
+  // Manages:
+  // 1. Reflections storage
+  // 2. Custom quick actions
+  // 3. User preferences
+  // Key operations:
+  // - Get/Delete reflections
+  // - Manage custom quick actions (CRUD)
+  // - Handle loading states
+}
+```
+
+Features:
+
+- Namespace-based storage organization
+- Assistant-specific reflection storage
+- Custom quick actions management
+- Error handling and loading states
+
+### Frontend State Management
+
+The GraphContext manages frontend state and communication:
+
+```tsx
+// src/contexts/GraphContext.tsx
+interface GraphData {
+  runId: string | undefined;
+  isStreaming: boolean;
+  selectedBlocks: TextHighlight | undefined;
+  messages: BaseMessage[];
+  artifact: ArtifactV3 | undefined;
+  updateRenderedArtifactRequired: boolean;
+  isArtifactSaved: boolean;
+  firstTokenReceived: boolean;
+  feedbackSubmitted: boolean;
+  setFeedbackSubmitted: Dispatch<SetStateAction<boolean>>;
+  setArtifact: Dispatch<SetStateAction<ArtifactV3 | undefined>>;
+  setSelectedBlocks: Dispatch<SetStateAction<TextHighlight | undefined>>;
+  setSelectedArtifact: (index: number) => void;
+  setMessages: Dispatch<SetStateAction<BaseMessage[]>>;
+  streamMessage: (params: GraphInput) => Promise<void>;
+  setArtifactContent: (index: number, content: string) => void;
+  clearState: () => void;
+  switchSelectedThread: (thread: Thread) => void;
+  setUpdateRenderedArtifactRequired: Dispatch<SetStateAction<boolean>>;
+}
+```
+
+### Streaming Response Handling
+
+The streaming response from LangGraph is processed in chunks:
+
+```tsx
+// src/contexts/GraphContext.tsx
+const streamMessageV2 = async (params: GraphInput) => {
+  // ... validation checks ...
+
+  const client = createClient();
+  const input = {
+    ...DEFAULT_INPUTS,
+    artifact,
+    ...params,
+    ...(selectedBlocks && {
+      highlightedText: selectedBlocks,
+    }),
+  };
+
+  // ... input validation ...
+
+  setIsStreaming(true);
+  let runId = "";
+  let followupMessageId = "";
+
+  try {
+    const stream = client.runs.stream(
+      threadData.threadId,
+      assistantsData.selectedAssistant.assistant_id,
+      {
+        input,
+        streamMode: "events",
+        config: {
+          configurable: {
+            customModelName: threadData.modelName,
+          },
+        },
+      }
+    );
+
+    // ... state tracking variables ...
+
+    for await (const chunk of stream) {
+      try {
+        // Track run ID
+        if (!runId && chunk.data?.metadata?.run_id) {
+          runId = chunk.data.metadata.run_id;
+          setRunId(runId);
+        }
+
+        if (chunk.data.event === "on_chat_model_stream") {
+          // Handle different node types:
+          // - Generate new messages
+          // - Generate artifacts
+          // - Update highlighted text
+          // - Update artifacts
+          // - Rewrite artifacts
+          // - Handle theme changes
+          // ... specific node handling logic ...
+        }
+
+        if (chunk.data.event === "on_chat_model_end") {
+          // Handle completion events
+          // ... completion logic ...
+        }
+      } catch (e) {
+        console.error("Failed to parse stream chunk", e);
+      }
+    }
+  } catch (e) {
+    console.error("Failed to stream message", e);
+  } finally {
+    setSelectedBlocks(undefined);
+    setIsStreaming(false);
+  }
+
+  // Share run if completed successfully
+  if (runId) {
+    shareRun(runId).then(async (sharedRunURL) => {
+      // Update messages with run URL
+      // ... message update logic ...
+    });
+  }
+};
+```
+
+- Validate inputs and setup client
+- Initialize streaming connection
+- Process stream chunks:
+  - Track run ID
+  - Handle different node types
+  - Update UI state based on events
+- Share run results when complete
+- Clean up state
+
+### Store Operations
+
+Separate routes handle store operations:
+
+```ts
+// src/app/api/store/put/route.ts
+export async function POST(req: NextRequest) {
+  let user: User | undefined;
+  try {
+    console.log("User authentication started");
+    user = await verifyUserAuthenticated();
+    if (!user) {
+      console.error("User authentication failed: Unauthorized");
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+    console.log("User authentication successful for user:", user.id);
+  } catch (e) {
+    console.error("Failed to fetch user", e);
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const { namespace, key, value } = await req.json();
+
+  const lgClient = new Client({
+    apiKey: process.env.LANGCHAIN_API_KEY,
+    apiUrl: LANGGRAPH_API_URL,
+  });
+
+  // perform store operation
+  try {
+    console.log("Putting item with key:", key, "into namespace:", namespace);
+    await lgClient.store.putItem(namespace, key, value);
+    console.log("Item put successfully for key:", key);
+
+    return new NextResponse(JSON.stringify({ success: true }), {
+      status: 200,
+      headers: { "Content-Type": "application/json" },
+    });
+  } catch (error) {
+    console.error("Failed to put item:", error);
+    return new NextResponse(JSON.stringify({ error: "Failed to put item." }), {
+      status: 500,
+      headers: { "Content-Type": "application/json" },
+    });
+  }
+}
+```
+
+The flow works like this:
+
+- Frontend makes request through GraphContext
+- Request goes through Next.js middleware for auth check
+- API route validates user and transforms request
+- Request forwarded to LangGraph
+- Response streamed back through API route
+- Frontend updates state based on streamed response
+
+### Frontend Canvas Architecture
+
+The canvas is the main interface component that manages the interaction between the chat interface and artifact rendering:
+
+```tsx
+// src/components/canvas/canvas.tsx
+export function CanvasComponent() {
+  // Main layout with dynamic width adjustment
   return (
     <main className="h-screen flex flex-row">
       <div
@@ -121,26 +451,11 @@ export function CanvasComponent() {
           "h-full mr-auto bg-gray-50/70 shadow-inner-right"
         )}
       >
-        <ContentComposerChatInterface
-          switchSelectedThreadCallback={(thread) => {
-            // Chat should only be "started" if there are messages present
-            if ((thread.values as Record<string, any>)?.messages?.length) {
-              setChatStarted(true);
-              setModelName(
-                thread?.metadata?.customModelName as ALL_MODEL_NAMES
-              );
-            } else {
-              setChatStarted(false);
-            }
-          }}
-          setChatStarted={setChatStarted}
-          hasChatStarted={chatStarted}
-          handleQuickStart={handleQuickStart}
-        />
+        <ContentComposerChatInterface />
       </div>
       {chatStarted && (
         <div className="w-full ml-auto">
-          <ArtifactRenderer setIsEditing={setIsEditing} isEditing={isEditing} />
+          <ArtifactRenderer />
         </div>
       )}
     </main>
@@ -148,135 +463,47 @@ export function CanvasComponent() {
 }
 ```
 
-Key responsibilities:
+Key features:
 
-- Manages the chat interface and artifact renderer layout
-- Handles quick start actions for new documents
-- Controls the editing state of artifacts
-- Manages model selection and thread management
+- Split view layout with dynamic resizing
+- Smooth transitions between states
+- Integrated chat and artifact rendering
+- Quick start functionality for both text and code
 
-### GraphContext
+#### Content Composer
 
-The central state management system that handles:
-
-- Artifact state management
-- Message handling
-- Real-time updates
-- Thread management
-
-Reference:
+The content composer manages the chat interface and message handling:
 
 ```tsx
-// 110:185:src/contexts/GraphContext.tsx
-export function GraphProvider({ children }: { children: ReactNode }) {
-  const userData = useUser();
-  const threadData = useThread();
-  const { toast } = useToast();
-  const { shareRun } = useRuns();
-  const [messages, setMessages] = useState<BaseMessage[]>([]);
-  const [artifact, setArtifact] = useState<ArtifactV3>();
-  const [selectedBlocks, setSelectedBlocks] = useState<TextHighlight>();
-  const [isStreaming, setIsStreaming] = useState(false);
-  const [updateRenderedArtifactRequired, setUpdateRenderedArtifactRequired] =
-    useState(false);
-  const lastSavedArtifact = useRef<ArtifactV3 | undefined>(undefined);
-  const debouncedAPIUpdate = useRef(
-    debounce(
-      (artifact: ArtifactV3, threadId: string) =>
-        updateArtifact(artifact, threadId),
-      5000
-    )
-  ).current;
-  const [isArtifactSaved, setIsArtifactSaved] = useState(true);
-  const [threadSwitched, setThreadSwitched] = useState(false);
-  const [firstTokenReceived, setFirstTokenReceived] = useState(false);
-  const [runId, setRunId] = useState<string>();
-  const [feedbackSubmitted, setFeedbackSubmitted] = useState(false);
+// src/components/canvas/content-composer.tsx
+export function ContentComposerChatInterface() {
+  // Handles new message creation and streaming
+  async function onNew(message: AppendMessage): Promise<void> {
+    // Convert and stream messages
+    const humanMessage = new HumanMessage({
+      content: message.content[0].text,
+      id: uuidv4(),
+    });
 
-  useEffect(() => {
-    if (userData.user) return;
-    userData.getUser();
-  }, []);
+    setMessages((prevMessages) => [...prevMessages, humanMessage]);
+    await streamMessage({
+      messages: [convertToOpenAIFormat(humanMessage)],
+    });
+  }
 
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    if (!userData.user) return;
-
-    if (!threadData.threadId) {
-      threadData.searchOrCreateThread(userData.user.id);
-    }
-
-    if (!threadData.assistantId) {
-      threadData.getOrCreateAssistant();
-    }
-  }, [userData.user]);
-
-  useEffect(() => {
-    if (typeof window === "undefined" || !userData.user) return;
-    addAssistantIdToUser();
-  }, [userData.user]);
-
-  useEffect(() => {
-    if (typeof window === "undefined" || !userData.user) return;
-    addAssistantIdToUser();
-  }, [userData.user]);
-
-  // Very hacky way of ensuring updateState is not called when a thread is switched
-  useEffect(() => {
-    if (threadSwitched) {
-      const timer = setTimeout(() => {
-        setThreadSwitched(false);
-      }, 1000);
-
-      return () => clearTimeout(timer);
-    }
-  }, [threadSwitched]);
-
-  useEffect(() => {
-    return () => {
-      debouncedAPIUpdate.cancel();
-    };
-  }, [debouncedAPIUpdate]);
-
-  useEffect(() => {
-    if (!threadData.threadId) return;
-    if (!messages.length || !artifact) return;
-    if (updateRenderedArtifactRequired || threadSwitched || isStreaming) return;
-    const currentIndex = artifact.currentIndex;
-    const currentContent = artifact.contents.find(
-      (c) => c.index === currentIndex
-    );
-    if (!currentContent) return;
-    if (
-      (artifact.contents.length === 1 &&
-        artifact.contents[0].type === "text" &&
-        !artifact.contents[0].fullMarkdown) ||
-      (artifact.contents[0].type === "code" && !artifact.contents[0].code)
-    ) {
-      // If the artifact has only one content and it's empty, we shouldn't update the state
-      return;
-    }
-///...
+  // Runtime integration with external message converter
+  const threadMessages = useExternalMessageConverter<BaseMessage>({
+    callback: convertLangchainMessages,
+    messages: messages,
+    isRunning,
+  });
+}
 ```
 
-## Documentation Plan
+Features:
 
-1. **Component Documentation**
-   - Create a `components/README.md` file
-   - Document each major component's purpose and props
-   - Include usage examples
-
-2. **Type System Documentation**
-   - Document key types and interfaces
-   - Explain the artifact system structure
-   - Document state management types
-
-3. **Setup Guide**
-   - Update environment configuration documentation
-   - Document local development setup
-   - Add troubleshooting guides
-
-4. **Code Style Guide**
-   - Document coding conventions
-   - Add ESLint and Prettier configuration explanations
-   - Include component organization guidelines
+- Real-time message streaming
+- Message format conversion
+- Thread management
+- Quick start templates
+- Integration with LangChain messages
