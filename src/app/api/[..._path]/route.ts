@@ -33,6 +33,7 @@ async function handleRequest(req: NextRequest, method: string) {
       ? `?${searchParams.toString()}`
       : "";
 
+    // prepare request for LangGraph API
     const options: RequestInit = {
       method,
       headers: {
@@ -40,25 +41,30 @@ async function handleRequest(req: NextRequest, method: string) {
       },
     };
 
+    // handle request methods that include a body (POST, PUT, PATCH)
     if (["POST", "PUT", "PATCH"].includes(method)) {
       const bodyText = await req.text();
 
+      // if body exists, parse and modify it
       if (typeof bodyText === "string" && bodyText.length > 0) {
         const parsedBody = JSON.parse(bodyText);
+        // ensure config object exists
         parsedBody.config = parsedBody.config || {};
+        // add user ID to configurable settings
         parsedBody.config.configurable = {
           ...parsedBody.config.configurable,
           supabase_user_id: user.id,
         };
         options.body = JSON.stringify(parsedBody);
       } else {
-        options.body = bodyText;
+        options.body = bodyText; // use raw body if empty/invalid
       }
     }
 
+    // forward request to LangGraph API with constructed path and options
     const res = await fetch(
       `${LANGGRAPH_API_URL}/${path}${queryString}`,
-      options
+      options // pass along method and body
     );
 
     if (res.status >= 400) {
@@ -72,7 +78,7 @@ async function handleRequest(req: NextRequest, method: string) {
     const headers = new Headers({
       ...getCorsHeaders(),
     });
-    // Safely add headers from the original response
+    // safely add headers from the original response
     res.headers.forEach((value, key) => {
       try {
         headers.set(key, value);
@@ -80,7 +86,7 @@ async function handleRequest(req: NextRequest, method: string) {
         console.warn(`Failed to set header: ${key}`, error);
       }
     });
-
+    // construct and return the final response to frontend
     return new Response(res.body, {
       status: res.status,
       statusText: res.statusText,
@@ -100,7 +106,7 @@ export const PUT = (req: NextRequest) => handleRequest(req, "PUT");
 export const PATCH = (req: NextRequest) => handleRequest(req, "PATCH");
 export const DELETE = (req: NextRequest) => handleRequest(req, "DELETE");
 
-// Add a new OPTIONS handler
+// add a new OPTIONS handler
 export const OPTIONS = () => {
   return new NextResponse(null, {
     status: 204,

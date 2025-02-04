@@ -231,6 +231,7 @@ export function GraphProvider({ children }: { children: ReactNode }) {
     setFirstTokenReceived(true);
   };
 
+  // user interaction triggers a stream message
   const streamMessageV2 = async (params: GraphInput) => {
     setFirstTokenReceived(false);
     if (!threadData.threadId) {

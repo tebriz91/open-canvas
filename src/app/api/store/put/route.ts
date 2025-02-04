@@ -26,6 +26,7 @@ export async function POST(req: NextRequest) {
     apiUrl: LANGGRAPH_API_URL,
   });
 
+  // perform store operation
   try {
     console.log("Putting item with key:", key, "into namespace:", namespace);
     await lgClient.store.putItem(namespace, key, value);
@@ -37,12 +38,9 @@ export async function POST(req: NextRequest) {
     });
   } catch (error) {
     console.error("Failed to put item:", error);
-    return new NextResponse(
-      JSON.stringify({ error: "Failed to put item." }),
-      {
-        status: 500,
-        headers: { "Content-Type": "application/json" },
-      }
-    );
+    return new NextResponse(JSON.stringify({ error: "Failed to put item." }), {
+      status: 500,
+      headers: { "Content-Type": "application/json" },
+    });
   }
 }
