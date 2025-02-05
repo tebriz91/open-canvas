@@ -19,11 +19,6 @@ export const generatePath = async (
   state: typeof OpenCanvasGraphAnnotation.State,
   config: LangGraphRunnableConfig
 ) => {
-  if (state.highlightedCode) {
-    return {
-      next: "updateArtifact",
-    };
-  }
   if (state.highlightedText) {
     return {
       next: "updateHighlightedText",
@@ -38,17 +33,6 @@ export const generatePath = async (
   ) {
     return {
       next: "rewriteArtifactTheme",
-    };
-  }
-
-  if (
-    state.addComments ||
-    state.addLogs ||
-    state.portLanguage ||
-    state.fixBugs
-  ) {
-    return {
-      next: "rewriteCodeArtifactTheme",
     };
   }
 

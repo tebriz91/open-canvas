@@ -11,10 +11,8 @@ import {
 import {
   convertToArtifactV3,
   replaceOrInsertMessageChunk,
-  updateHighlightedCode,
   updateHighlightedMarkdown,
   updateRewrittenArtifact,
-  removeCodeBlockFormatting,
   handleGenerateArtifactToolCallChunk,
 } from "./utils";
 import { useUser } from "@/hooks/useUser";
@@ -24,9 +22,7 @@ import {
   ArtifactLengthOptions,
   ArtifactType,
   ArtifactV3,
-  CodeHighlight,
   LanguageOptions,
-  ProgrammingLanguageOptions,
   ReadingLevelOptions,
   RewriteArtifactMetaToolResponse,
   TextHighlight,
@@ -43,11 +39,9 @@ import {
 import { Thread } from "@langchain/langgraph-sdk";
 import { useToast } from "@/hooks/use-toast";
 import {
-  isArtifactCodeContent,
   isArtifactMarkdownContent,
   isDeprecatedArtifactType,
 } from "@/lib/artifact_content_types";
-import { reverseCleanContent } from "@/lib/normalize_string";
 import { setCookie } from "@/lib/cookies";
 import { useAssistants } from "@/hooks/useAssistants";
 
@@ -90,21 +84,12 @@ const GraphContext = createContext<GraphContentType | undefined>(undefined);
 
 export interface GraphInput {
   messages?: Record<string, any>[];
-
-  highlightedCode?: CodeHighlight;
   highlightedText?: TextHighlight;
-
   artifact?: ArtifactV3;
-
   language?: LanguageOptions;
   artifactLength?: ArtifactLengthOptions;
   regenerateWithEmojis?: boolean;
   readingLevel?: ReadingLevelOptions;
-
-  addComments?: boolean;
-  addLogs?: boolean;
-  portLanguage?: ProgrammingLanguageOptions;
-  fixBugs?: boolean;
   customQuickActionId?: string;
 }
 
@@ -186,8 +171,7 @@ export function GraphProvider({ children }: { children: ReactNode }) {
     if (
       (artifact.contents.length === 1 &&
         artifact.contents[0].type === "text" &&
-        !artifact.contents[0].fullMarkdown) ||
-      (artifact.contents[0].type === "code" && !artifact.contents[0].code)
+        !artifact.contents[0].fullMarkdown)
     ) {
       // If the artifact has only one content and it's empty, we shouldn't update the state
       return;
@@ -267,16 +251,11 @@ export function GraphProvider({ children }: { children: ReactNode }) {
     };
     // Add check for multiple defined fields
     const fieldsToCheck = [
-      input.highlightedCode,
       input.highlightedText,
       input.language,
       input.artifactLength,
       input.regenerateWithEmojis,
       input.readingLevel,
-      input.addComments,
-      input.addLogs,
-      input.fixBugs,
-      input.portLanguage,
       input.customQuickActionId,
     ];
 
@@ -480,86 +459,6 @@ export function GraphProvider({ children }: { children: ReactNode }) {
               }
             }
 
-            if (chunk.data.metadata.langgraph_node === "updateArtifact") {
-              if (!artifact) {
-                toast({
-                  title: "Error",
-                  description: "Original artifact not found",
-                  variant: "destructive",
-                  duration: 5000,
-                });
-                return;
-              }
-              if (!params.highlightedCode) {
-                toast({
-                  title: "Error",
-                  description: "No highlighted code found",
-                  variant: "destructive",
-                  duration: 5000,
-                });
-                return;
-              }
-
-              const partialUpdatedContent =
-                chunk.data.data.chunk?.[1]?.content || "";
-              const { startCharIndex, endCharIndex } = params.highlightedCode;
-
-              if (!prevCurrentContent) {
-                toast({
-                  title: "Error",
-                  description: "Original artifact not found",
-                  variant: "destructive",
-                  duration: 5000,
-                });
-                return;
-              }
-              if (prevCurrentContent.type !== "code") {
-                toast({
-                  title: "Error",
-                  description: "Received non code block update",
-                  variant: "destructive",
-                  duration: 5000,
-                });
-                return;
-              }
-
-              if (
-                updatedArtifactStartContent === undefined &&
-                updatedArtifactRestContent === undefined
-              ) {
-                updatedArtifactStartContent = prevCurrentContent.code.slice(
-                  0,
-                  startCharIndex
-                );
-                updatedArtifactRestContent =
-                  prevCurrentContent.code.slice(endCharIndex);
-              } else {
-                // One of the above have been populated, now we can update the start to contain the new text.
-                updatedArtifactStartContent += partialUpdatedContent;
-              }
-              const firstUpdateCopy = isFirstUpdate;
-              setFirstTokenReceived(true);
-              setArtifact((prev) => {
-                if (!prev) {
-                  throw new Error("No artifact found when updating markdown");
-                }
-                const content = removeCodeBlockFormatting(
-                  `${updatedArtifactStartContent}${updatedArtifactRestContent}`
-                );
-                return updateHighlightedCode(
-                  prev,
-                  content,
-                  newArtifactIndex,
-                  prevCurrentContent,
-                  firstUpdateCopy
-                );
-              });
-
-              if (isFirstUpdate) {
-                isFirstUpdate = false;
-              }
-            }
-
             if (
               chunk.data.metadata.langgraph_node === "rewriteArtifact" &&
               chunk.data.name === "rewrite_artifact_model_call" &&
@@ -577,23 +476,6 @@ export function GraphProvider({ children }: { children: ReactNode }) {
 
               newArtifactContent += chunk.data.data.chunk?.[1]?.content || "";
 
-              // Ensure we have the language to update the artifact with
-              let artifactLanguage = params.portLanguage || undefined;
-              if (
-                !artifactLanguage &&
-                rewriteArtifactMeta.type === "code" &&
-                rewriteArtifactMeta.language
-              ) {
-                // If the type is `code` we should have a programming language populated
-                // in the rewriteArtifactMeta and can use that.
-                artifactLanguage =
-                  rewriteArtifactMeta.language as ProgrammingLanguageOptions;
-              } else if (!artifactLanguage) {
-                artifactLanguage =
-                  (prevCurrentContent?.title as ProgrammingLanguageOptions) ??
-                  "other";
-              }
-
               const firstUpdateCopy = isFirstUpdate;
               setFirstTokenReceived(true);
               setArtifact((prev) => {
@@ -601,15 +483,12 @@ export function GraphProvider({ children }: { children: ReactNode }) {
                   throw new Error("No artifact found when updating markdown");
                 }
 
-                let content = newArtifactContent;
+                const content = newArtifactContent;
                 if (!rewriteArtifactMeta) {
                   console.error(
                     "No rewrite artifact meta found when updating artifact"
                   );
                   return prev;
-                }
-                if (rewriteArtifactMeta.type === "code") {
-                  content = removeCodeBlockFormatting(content);
                 }
 
                 return updateRewrittenArtifact({
@@ -619,7 +498,6 @@ export function GraphProvider({ children }: { children: ReactNode }) {
                   prevCurrentContent,
                   newArtifactIndex,
                   isFirstUpdate: firstUpdateCopy,
-                  artifactLanguage,
                 });
               });
 
@@ -631,7 +509,6 @@ export function GraphProvider({ children }: { children: ReactNode }) {
             if (
               [
                 "rewriteArtifactTheme",
-                "rewriteCodeArtifactTheme",
                 "customAction",
               ].includes(chunk.data.metadata.langgraph_node)
             ) {
@@ -656,18 +533,9 @@ export function GraphProvider({ children }: { children: ReactNode }) {
 
               newArtifactContent += chunk.data.data.chunk?.[1]?.content || "";
 
-              // Ensure we have the language to update the artifact with
-              const artifactLanguage =
-                params.portLanguage ||
-                (isArtifactCodeContent(prevCurrentContent)
-                  ? prevCurrentContent.language
-                  : "other");
-
               const langGraphNode = chunk.data.metadata.langgraph_node;
               let artifactType: ArtifactType;
-              if (langGraphNode === "rewriteCodeArtifactTheme") {
-                artifactType = "code";
-              } else if (langGraphNode === "rewriteArtifactTheme") {
+              if (langGraphNode === "rewriteArtifactTheme") {
                 artifactType = "text";
               } else {
                 artifactType = prevCurrentContent.type;
@@ -679,10 +547,7 @@ export function GraphProvider({ children }: { children: ReactNode }) {
                   throw new Error("No artifact found when updating markdown");
                 }
 
-                let content = newArtifactContent;
-                if (artifactType === "code") {
-                  content = removeCodeBlockFormatting(content);
-                }
+                const content = newArtifactContent;
 
                 return updateRewrittenArtifact({
                   prevArtifact: prev ?? artifact,
@@ -690,14 +555,13 @@ export function GraphProvider({ children }: { children: ReactNode }) {
                   rewriteArtifactMeta: {
                     type: artifactType,
                     title: prevCurrentContent.title,
-                    language: artifactLanguage,
                   },
                   prevCurrentContent,
                   newArtifactIndex,
                   isFirstUpdate: firstUpdateCopy,
-                  artifactLanguage,
                 });
               });
+
 
               if (isFirstUpdate) {
                 isFirstUpdate = false;
@@ -828,7 +692,7 @@ export function GraphProvider({ children }: { children: ReactNode }) {
     });
   };
 
-  const setArtifactContent = (index: number, content: string) => {
+  const setArtifactContent = (index: number) => {
     setArtifact((prev) => {
       if (!prev) {
         toast({
@@ -843,12 +707,6 @@ export function GraphProvider({ children }: { children: ReactNode }) {
         ...prev,
         currentIndex: index,
         contents: prev.contents.map((a) => {
-          if (a.index === index && a.type === "code") {
-            return {
-              ...a,
-              code: reverseCleanContent(content),
-            };
-          }
           return a;
         }),
       };

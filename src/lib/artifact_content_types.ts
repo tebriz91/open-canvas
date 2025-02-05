@@ -1,15 +1,4 @@
-import type { Artifact, ArtifactCodeV3, ArtifactMarkdownV3 } from "../types";
-
-export const isArtifactCodeContent = (
-  content: unknown
-): content is ArtifactCodeV3 => {
-  return !!(
-    typeof content === "object" &&
-    content &&
-    "type" in content &&
-    content.type === "code"
-  );
-};
+import type { Artifact, ArtifactMarkdownV3 } from "../types";
 
 export const isArtifactMarkdownContent = (
   content: unknown

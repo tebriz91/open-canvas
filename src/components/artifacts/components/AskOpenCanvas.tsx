@@ -5,7 +5,6 @@ import { CircleArrowUp } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ArtifactV3 } from "@/types";
 import { getArtifactContent } from "@/contexts/utils";
-import { isArtifactCodeContent } from "@/lib/artifact_content_types";
 import { useToast } from "@/hooks/use-toast";
 
 interface AskOpenCanvasProps {
@@ -49,8 +48,7 @@ export const AskOpenCanvas = forwardRef<HTMLDivElement, AskOpenCanvasProps>(
         : undefined;
       if (
         !selectionIndexes &&
-        artifactContent &&
-        isArtifactCodeContent(artifactContent)
+        artifactContent
       ) {
         toast({
           title: "Selection error",

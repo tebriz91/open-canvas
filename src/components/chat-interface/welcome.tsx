@@ -1,16 +1,13 @@
-import { ProgrammingLanguageOptions } from "@/types";
 import { ThreadPrimitive, useThreadRuntime } from "@assistant-ui/react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { FC } from "react";
 import { TighterText } from "../ui/header";
 import { NotebookPen } from "lucide-react";
-import { ProgrammingLanguagesDropdown } from "../ui/programming-lang-dropdown";
 import { Button } from "../ui/button";
 
 interface QuickStartButtonsProps {
   handleQuickStart: (
-    type: "text" | "code",
-    language?: ProgrammingLanguageOptions
+    type: "text",
   ) => void;
   composer: React.ReactNode;
 }
@@ -35,7 +32,7 @@ const QuickStartPrompts = () => {
           variant="outline"
           className="flex-1"
         >
-          <TighterText>Write me a TODO app in React</TighterText>
+          <TighterText>Write me a blog post about the benefits of using AI</TighterText>
         </Button>
         <Button
           onClick={(e) =>
@@ -68,7 +65,7 @@ const QuickStartPrompts = () => {
           variant="outline"
           className="flex-1"
         >
-          <TighterText>Write a web scraping program in Python</TighterText>
+          <TighterText>Explain the importance of learning to code</TighterText>
         </Button>
       </div>
     </div>
@@ -76,9 +73,6 @@ const QuickStartPrompts = () => {
 };
 
 const QuickStartButtons = (props: QuickStartButtonsProps) => {
-  const handleLanguageSubmit = (language: ProgrammingLanguageOptions) => {
-    props.handleQuickStart("code", language);
-  };
 
   return (
     <div className="flex flex-col gap-8 items-center justify-center w-full">
@@ -93,7 +87,6 @@ const QuickStartButtons = (props: QuickStartButtonsProps) => {
             <TighterText>New Markdown</TighterText>
             <NotebookPen />
           </Button>
-          <ProgrammingLanguagesDropdown handleSubmit={handleLanguageSubmit} />
         </div>
       </div>
       <div className="flex flex-col gap-6 mt-2 w-full">
@@ -107,10 +100,10 @@ const QuickStartButtons = (props: QuickStartButtonsProps) => {
 
 interface ThreadWelcomeProps {
   handleQuickStart: (
-    type: "text" | "code",
-    language?: ProgrammingLanguageOptions
+    type: "text",
   ) => void;
   composer: React.ReactNode;
+
 }
 
 export const ThreadWelcome: FC<ThreadWelcomeProps> = (

@@ -1,12 +1,9 @@
-const DEFAULT_CODE_PROMPT_RULES = `- Do NOT include triple backticks when generating code. The code should be in plain text.`;
-
 const APP_CONTEXT = `
 <app-context>
 The name of the application is "Open Canvas". Open Canvas is a web application where users have a chat window and a canvas to display an artifact.
-Artifacts can be any sort of writing content, emails, code, or other creative writing work. Think of artifacts as content, or writing you might find on you might find on a blog, Google doc, or other writing platform.
+Artifacts can be any sort of writing content, emails or other creative writing work. Think of artifacts as content, or writing you might find on you might find on a blog, Google doc, or other writing platform.
 Users only have a single artifact per conversation, however they have the ability to go back and fourth between artifact edits/revisions.
 If a user asks you to generate something completely different from the current artifact, you may do this, as the UI displaying the artifacts will be updated to show whatever they've requested.
-Even if the user goes from a 'text' artifact to a 'code' artifact.
 </app-context>
 `;
 
@@ -18,8 +15,6 @@ Use the full chat history as context when generating the artifact.
 Follow these rules and guidelines:
 <rules-guidelines>
 - Do not wrap it in any XML tags you see in this prompt.
-- If writing code, do not add inline comments unless the user has specifically requested them. This is very important as we don't want to clutter the code.
-${DEFAULT_CODE_PROMPT_RULES}
 </rules-guidelines>
 
 You also have the following reflections on style guidelines and general memories/facts about the user to use when generating your response.
@@ -34,7 +29,6 @@ Here is the relevant part of the artifact, with the highlighted text between <hi
 
 {beforeHighlight}<highlight>{highlightedText}</highlight>{afterHighlight}
 
-
 Please update the highlighted text based on the user's request.
 
 Follow these rules and guidelines:
@@ -47,7 +41,6 @@ Follow these rules and guidelines:
 - You should use proper markdown syntax when appropriate, as the text you generate will be rendered in markdown.
 - NEVER generate content that is not included in the highlighted text. Whether the highlighted text be a single character, split a single word,
   an incomplete sentence, or an entire paragraph, you should ONLY generate content that is within the highlighted text.
-${DEFAULT_CODE_PROMPT_RULES}
 </rules-guidelines>
 
 You also have the following reflections on style guidelines and general memories/facts about the user to use when generating your response.
@@ -65,13 +58,7 @@ You do NOT need to change the type unless it is clear the user is asking for the
 Use this context about the application when making your decision:
 ${APP_CONTEXT}
 
-The types you can choose from are:
-- 'text': This is a general text artifact. This could be a poem, story, email, or any other type of writing.
-- 'code': This is a code artifact. This could be a code snippet, a full program, or any other type of code.
-
 Be careful when selecting the type, as this will update how the artifact is displayed in the UI.
-
-Remember, if you change the type from 'text' to 'code' you must also define the programming language the code should be written in.
 
 Here is the current artifact (only the first 500 characters, or less if the artifact is shorter):
 <artifact>
@@ -105,10 +92,7 @@ Follow these rules and guidelines:
 <rules-guidelines>
 - You should respond with the ENTIRE updated artifact, with no additional text before and after.
 - Do not wrap it in any XML tags you see in this prompt.
-- You should use proper markdown syntax when appropriate, as the text you generate will be rendered in markdown. UNLESS YOU ARE WRITING CODE.
-- When you generate code, a markdown renderer is NOT used so if you respond with code in markdown syntax, or wrap the code in tipple backticks it will break the UI for the user.
-- If generating code, it is imperative you never wrap it in triple backticks, or prefix/suffix it with plain text. Ensure you ONLY respond with the code.
-${DEFAULT_CODE_PROMPT_RULES}
+- You should use proper markdown syntax when appropriate, as the text you generate will be rendered in markdown.
 </rules-guidelines>
 
 {updateMetaPrompt}
@@ -290,82 +274,6 @@ Finally, here is the chat history between you and the user:
 This message should be very short. Never generate more than 2-3 short sentences. Your tone should be somewhat formal, but still friendly. Remember, you're an AI assistant.
 
 Do NOT include any tags, or extra text before or after your response. Do NOT prefix your response. Your response to this message should ONLY contain the description/followup message.`;
-
-export const ADD_COMMENTS_TO_CODE_ARTIFACT_PROMPT = `You are an expert software engineer, tasked with updating the following code by adding comments to it.
-Ensure you do NOT modify any logic or functionality of the code, simply add comments to explain the code.
-
-Your comments should be clear and concise. Do not add unnecessary or redundant comments.
-
-Here is the code to add comments to
-<code>
-{artifactContent}
-</code>
-
-Rules and guidelines:
-</rules-guidelines>
-- Respond with ONLY the updated code, and no additional text before or after.
-- Ensure you respond with the entire updated code, including the comments. Do not leave out any code from the original input.
-- Do not wrap it in any XML tags you see in this prompt. Ensure it's just the updated code.
-${DEFAULT_CODE_PROMPT_RULES}
-</rules-guidelines>`;
-
-export const ADD_LOGS_TO_CODE_ARTIFACT_PROMPT = `You are an expert software engineer, tasked with updating the following code by adding log statements to it.
-Ensure you do NOT modify any logic or functionality of the code, simply add logs throughout the code to help with debugging.
-
-Your logs should be clear and concise. Do not add redundant logs.
-
-Here is the code to add logs to
-<code>
-{artifactContent}
-</code>
-
-Rules and guidelines:
-<rules-guidelines>
-- Respond with ONLY the updated code, and no additional text before or after.
-- Ensure you respond with the entire updated code, including the logs. Do not leave out any code from the original input.
-- Do not wrap it in any XML tags you see in this prompt. Ensure it's just the updated code.
-${DEFAULT_CODE_PROMPT_RULES}
-</rules-guidelines>`;
-
-export const FIX_BUGS_CODE_ARTIFACT_PROMPT = `You are an expert software engineer, tasked with fixing any bugs in the following code.
-Read through all the code carefully before making any changes. Think through the logic, and ensure you do not introduce new bugs.
-
-Before updating the code, ask yourself:
-- Does this code contain logic or syntax errors?
-- From what you can infer, does it have missing business logic?
-- Can you improve the code's performance?
-- How can you make the code more clear and concise?
-
-Here is the code to potentially fix bugs in:
-<code>
-{artifactContent}
-</code>
-
-Rules and guidelines:
-<rules-guidelines>
-- Respond with ONLY the updated code, and no additional text before or after.
-- Ensure you respond with the entire updated code. Do not leave out any code from the original input.
-- Do not wrap it in any XML tags you see in this prompt. Ensure it's just the updated code
-- Ensure you are not making meaningless changes.
-${DEFAULT_CODE_PROMPT_RULES}
-</rules-guidelines>`;
-
-export const PORT_LANGUAGE_CODE_ARTIFACT_PROMPT = `You are an expert software engineer, tasked with re-writing the following code in {newLanguage}.
-Read through all the code carefully before making any changes. Think through the logic, and ensure you do not introduce bugs.
-
-Here is the code to port to {newLanguage}:
-<code>
-{artifactContent}
-</code>
-
-Rules and guidelines:
-<rules-guidelines>
-- Respond with ONLY the updated code, and no additional text before or after.
-- Ensure you respond with the entire updated code. Your user expects a fully translated code snippet.
-- Do not wrap it in any XML tags you see in this prompt. Ensure it's just the updated code
-- Ensure you do not port over language specific modules. E.g if the code contains imports from Node's fs module, you must use the closest equivalent in {newLanguage}.
-${DEFAULT_CODE_PROMPT_RULES}
-</rules-guidelines>`;
 
 export const REFLECTIONS_QUICK_ACTION_PROMPT = `The following are reflections on the user's style guidelines and general memories/facts about the user.
 Use these reflections as context when generating your response.

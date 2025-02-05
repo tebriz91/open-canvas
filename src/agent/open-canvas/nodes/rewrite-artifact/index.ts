@@ -31,7 +31,7 @@ export const rewriteArtifact = async (
 
   const artifactContent = isArtifactMarkdownContent(currentArtifactContent)
     ? currentArtifactContent.fullMarkdown
-    : currentArtifactContent.code;
+    : "";
 
   const formattedPrompt = buildPrompt({
     artifactContent,

@@ -7,9 +7,7 @@ import { generatePath } from "./nodes/generatePath";
 import { reflectNode } from "./nodes/reflect";
 import { rewriteArtifact } from "./nodes/rewrite-artifact";
 import { rewriteArtifactTheme } from "./nodes/rewriteArtifactTheme";
-import { updateArtifact } from "./nodes/updateArtifact";
 import { replyToGeneralInput } from "./nodes/replyToGeneralInput";
-import { rewriteCodeArtifactTheme } from "./nodes/rewriteCodeArtifactTheme";
 import { generateTitleNode } from "./nodes/generateTitle";
 import { updateHighlightedText } from "./nodes/updateHighlightedText";
 import { OpenCanvasGraphAnnotation } from "./state";
@@ -53,8 +51,6 @@ const builder = new StateGraph(OpenCanvasGraphAnnotation)
   .addNode("replyToGeneralInput", replyToGeneralInput)
   .addNode("rewriteArtifact", rewriteArtifact)
   .addNode("rewriteArtifactTheme", rewriteArtifactTheme)
-  .addNode("rewriteCodeArtifactTheme", rewriteCodeArtifactTheme)
-  .addNode("updateArtifact", updateArtifact)
   .addNode("updateHighlightedText", updateHighlightedText)
   .addNode("generateArtifact", generateArtifact)
   .addNode("customAction", customAction)
@@ -64,9 +60,7 @@ const builder = new StateGraph(OpenCanvasGraphAnnotation)
   .addNode("generateTitle", generateTitleNode)
   // Initial router
   .addConditionalEdges("generatePath", routeNode, [
-    "updateArtifact",
     "rewriteArtifactTheme",
-    "rewriteCodeArtifactTheme",
     "replyToGeneralInput",
     "generateArtifact",
     "rewriteArtifact",
@@ -75,11 +69,9 @@ const builder = new StateGraph(OpenCanvasGraphAnnotation)
   ])
   // Edges
   .addEdge("generateArtifact", "generateFollowup")
-  .addEdge("updateArtifact", "generateFollowup")
   .addEdge("updateHighlightedText", "generateFollowup")
   .addEdge("rewriteArtifact", "generateFollowup")
   .addEdge("rewriteArtifactTheme", "generateFollowup")
-  .addEdge("rewriteCodeArtifactTheme", "generateFollowup")
   .addEdge("customAction", "generateFollowup")
   // End edges
   .addEdge("replyToGeneralInput", "cleanState")

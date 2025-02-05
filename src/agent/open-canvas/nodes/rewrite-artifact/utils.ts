@@ -1,6 +1,5 @@
 import { getArtifactContent } from "@/contexts/utils";
-import { isArtifactCodeContent } from "@/lib/artifact_content_types";
-import { ArtifactCodeV3, ArtifactMarkdownV3 } from "@/types";
+import { ArtifactMarkdownV3 } from "@/types";
 import {
   OPTIONALLY_UPDATE_META_PROMPT,
   UPDATE_ENTIRE_ARTIFACT_PROMPT,
@@ -29,15 +28,13 @@ export const validateState = (
 };
 
 const buildMetaPrompt = (artifactMetaToolCall: ToolCall | undefined) => {
-  const titleSection =
-    artifactMetaToolCall?.args?.title &&
-    artifactMetaToolCall?.args?.type !== "code"
-      ? `And its title is (do NOT include this in your response):\n${artifactMetaToolCall.args.title}`
-      : "";
+  const titleSection = artifactMetaToolCall?.args?.title
+    ? `And its title is (do NOT include this in your response):\n${artifactMetaToolCall.args.title}`
+    : "";
 
   return OPTIONALLY_UPDATE_META_PROMPT.replace(
     "{artifactType}",
-    artifactMetaToolCall?.args?.type
+    "text"
   ).replace("{artifactTitle}", titleSection);
 };
 
@@ -67,31 +64,22 @@ export const buildPrompt = ({
 interface CreateNewArtifactContentArgs {
   artifactType: string;
   state: typeof OpenCanvasGraphAnnotation.State;
-  currentArtifactContent: ArtifactCodeV3 | ArtifactMarkdownV3;
+  currentArtifactContent: ArtifactMarkdownV3;
   artifactMetaToolCall: ToolCall | undefined;
   newContent: string;
 }
 
 export const createNewArtifactContent = ({
-  artifactType,
   state,
   currentArtifactContent,
   artifactMetaToolCall,
   newContent,
-}: CreateNewArtifactContentArgs): ArtifactCodeV3 | ArtifactMarkdownV3 => {
+}: CreateNewArtifactContentArgs): ArtifactMarkdownV3 => {
   const baseContent = {
     index: state.artifact.contents.length + 1,
+    type: "text",
     title: artifactMetaToolCall?.args?.title || currentArtifactContent.title,
   };
-
-  if (artifactType === "code") {
-    return {
-      ...baseContent,
-      type: "code",
-      language: getLanguage(artifactMetaToolCall, currentArtifactContent),
-      code: newContent,
-    };
-  }
 
   return {
     ...baseContent,
@@ -99,12 +87,3 @@ export const createNewArtifactContent = ({
     fullMarkdown: newContent,
   };
 };
-
-const getLanguage = (
-  artifactMetaToolCall: ToolCall | undefined,
-  currentArtifactContent: ArtifactCodeV3 | ArtifactMarkdownV3 // Replace 'any' with proper type
-) =>
-  artifactMetaToolCall?.args?.programmingLanguage ||
-  (isArtifactCodeContent(currentArtifactContent)
-    ? currentArtifactContent.language
-    : "other");

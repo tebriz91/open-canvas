@@ -56,7 +56,7 @@ export const reflect = async (
   const artifactContent = currentArtifactContent
     ? isArtifactMarkdownContent(currentArtifactContent)
       ? currentArtifactContent.fullMarkdown
-      : currentArtifactContent.code
+      : undefined
     : undefined;
 
   const formattedSystemPrompt = REFLECT_SYSTEM_PROMPT.replace(

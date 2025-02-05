@@ -5,7 +5,6 @@ import {
   convertLangchainMessages,
   convertToOpenAIFormat,
 } from "@/lib/convert_messages";
-import { ProgrammingLanguageOptions } from "@/types";
 import {
   AppendMessage,
   AssistantRuntimeProvider,
@@ -25,8 +24,7 @@ export interface ContentComposerChatInterfaceProps {
   setChatStarted: React.Dispatch<React.SetStateAction<boolean>>;
   hasChatStarted: boolean;
   handleQuickStart: (
-    type: "text" | "code",
-    language?: ProgrammingLanguageOptions
+    type: "text",
   ) => void;
 }
 

@@ -36,7 +36,7 @@ export interface ArtifactContent {
 
 export interface ArtifactV2 {
   id: string;
-  contents: (ArtifactMarkdownContent | ArtifactCodeContent)[];
+  contents: ArtifactMarkdownContent[];
   currentContentIndex: number;
 }
 
@@ -58,15 +58,7 @@ export interface ArtifactMarkdownContent {
   type: "text";
 }
 
-export interface ArtifactCodeContent {
-  index: number;
-  code: string;
-  title: string;
-  type: "code";
-  language: ProgrammingLanguageOptions;
-}
-
-export type ArtifactType = "code" | "text";
+export type ArtifactType = "text";
 
 export interface Highlight {
   /**
@@ -85,84 +77,6 @@ export type LanguageOptions =
   | "spanish"
   | "french"
   | "hindi";
-
-export type ProgrammingLanguageOptions =
-  | "typescript"
-  | "javascript"
-  | "cpp"
-  | "java"
-  | "php"
-  | "python"
-  | "html"
-  | "sql"
-  | "json"
-  | "rust"
-  | "xml"
-  | "clojure"
-  | "csharp"
-  | "other";
-
-export const PROGRAMMING_LANGUAGES: Array<{
-  language: ProgrammingLanguageOptions;
-  label: string;
-}> = [
-  {
-    language: "typescript",
-    label: "TypeScript",
-  },
-  {
-    language: "javascript",
-    label: "JavaScript",
-  },
-  {
-    language: "cpp",
-    label: "C++",
-  },
-  {
-    language: "java",
-    label: "Java",
-  },
-  {
-    language: "php",
-    label: "PHP",
-  },
-  {
-    language: "python",
-    label: "Python",
-  },
-  {
-    language: "html",
-    label: "HTML",
-  },
-  {
-    language: "sql",
-    label: "SQL",
-  },
-  {
-    language: "json",
-    label: "JSON",
-  },
-  {
-    language: "rust",
-    label: "Rust",
-  },
-  {
-    language: "xml",
-    label: "XML",
-  },
-  {
-    language: "clojure",
-    label: "Clojure",
-  },
-  {
-    language: "csharp",
-    label: "C#",
-  },
-  {
-    language: "other",
-    label: "Other",
-  },
-];
 
 export type ArtifactLengthOptions = "shortest" | "short" | "long" | "longest";
 
@@ -214,7 +128,7 @@ export interface CustomQuickAction {
 
 export interface ArtifactV3 {
   currentIndex: number;
-  contents: (ArtifactMarkdownV3 | ArtifactCodeV3)[];
+  contents: ArtifactMarkdownV3[];
 }
 
 export interface ArtifactMarkdownV3 {
@@ -222,19 +136,6 @@ export interface ArtifactMarkdownV3 {
   type: "text";
   title: string;
   fullMarkdown: string;
-}
-
-export interface ArtifactCodeV3 {
-  index: number;
-  type: "code";
-  title: string;
-  language: ProgrammingLanguageOptions;
-  code: string;
-}
-
-export interface CodeHighlight {
-  startCharIndex: number;
-  endCharIndex: number;
 }
 
 export interface TextHighlight {
@@ -254,17 +155,10 @@ export interface NewMarkdownToolResponse {
   blocks: Array<{ block_id?: string; new_text?: string }>;
 }
 
-export type RewriteArtifactMetaToolResponse =
-  | {
-      type: "text";
-      title?: string;
-      language: ProgrammingLanguageOptions;
-    }
-  | {
-      type: "code";
-      title: string;
-      language: ProgrammingLanguageOptions;
-    };
+export interface RewriteArtifactMetaToolResponse {
+  type: "text";
+  title?: string;
+}
 
 export interface ModelConfig {
   temperature?: number;

@@ -3,14 +3,10 @@
 import { ArtifactRenderer } from "@/components/artifacts/ArtifactRenderer";
 import { ContentComposerChatInterface } from "./content-composer";
 import { ALL_MODEL_NAMES } from "@/constants";
-import { useToast } from "@/hooks/use-toast";
-import { getLanguageTemplate } from "@/lib/get_language_template";
 import { cn } from "@/lib/utils";
 import {
-  ArtifactCodeV3,
   ArtifactMarkdownV3,
   ArtifactV3,
-  ProgrammingLanguageOptions,
 } from "@/types";
 import { useEffect, useState } from "react";
 import { useGraphContext } from "@/contexts/GraphContext";
@@ -21,7 +17,6 @@ export function CanvasComponent() {
   const { user } = userData;
   const { threadId, clearThreadsWithNoValues, setModelName } = threadData;
   const { setArtifact } = graphData;
-  const { toast } = useToast();
   const [chatStarted, setChatStarted] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
 
@@ -29,39 +24,19 @@ export function CanvasComponent() {
     if (!threadId || !user) return;
     // Clear threads with no values
     clearThreadsWithNoValues(user.id);
-  }, [threadId, user]);
+  }, [threadId, user, clearThreadsWithNoValues]);
 
   const handleQuickStart = (
-    type: "text" | "code",
-    language?: ProgrammingLanguageOptions
+    type: "text" ,
   ) => {
-    if (type === "code" && !language) {
-      toast({
-        title: "Language not selected",
-        description: "Please select a language to continue",
-        duration: 5000,
-      });
-      return;
-    }
     setChatStarted(true);
 
-    let artifactContent: ArtifactCodeV3 | ArtifactMarkdownV3;
-    if (type === "code" && language) {
-      artifactContent = {
-        index: 1,
-        type: "code",
-        title: `Quick start ${type}`,
-        code: getLanguageTemplate(language),
-        language,
-      };
-    } else {
-      artifactContent = {
-        index: 1,
-        type: "text",
-        title: `Quick start ${type}`,
-        fullMarkdown: "",
-      };
-    }
+    const artifactContent: ArtifactMarkdownV3 = {
+      index: 1,
+      type: "text",
+      title: `Quick start ${type}`,
+      fullMarkdown: "",
+    };
 
     const newArtifact: ArtifactV3 = {
       currentIndex: 1,

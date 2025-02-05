@@ -43,7 +43,7 @@ export const generateTitle = async (
   const artifactContent = currentArtifactContent
     ? isArtifactMarkdownContent(currentArtifactContent)
       ? currentArtifactContent.fullMarkdown
-      : currentArtifactContent.code
+      : undefined
     : undefined;
 
   const artifactContext = artifactContent

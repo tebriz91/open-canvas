@@ -4,7 +4,6 @@ import { getModelFromConfig } from "../../utils";
 import { getArtifactContent } from "../../../contexts/utils";
 import { isArtifactMarkdownContent } from "../../../lib/artifact_content_types";
 import {
-  ArtifactCodeV3,
   ArtifactMarkdownV3,
   ArtifactV3,
   CustomQuickAction,
@@ -99,7 +98,7 @@ export const customAction = async (
 
   const artifactContent = isArtifactMarkdownContent(currentArtifactContent)
     ? currentArtifactContent.fullMarkdown
-    : currentArtifactContent?.code;
+    : undefined;
   formattedPrompt += `\n\n${CUSTOM_QUICK_ACTION_ARTIFACT_CONTENT_PROMPT.replace("{artifactContent}", artifactContent || "No artifacts generated yet.")}`;
 
   const newArtifactValues = await smallModel.invoke([
@@ -111,12 +110,11 @@ export const customAction = async (
     return {};
   }
 
-  const newArtifactContent: ArtifactCodeV3 | ArtifactMarkdownV3 = {
+  const newArtifactContent: ArtifactMarkdownV3 = {
     ...currentArtifactContent,
+    type: "text",
     index: state.artifact.contents.length + 1,
-    ...(isArtifactMarkdownContent(currentArtifactContent)
-      ? { fullMarkdown: newArtifactValues.content as string }
-      : { code: newArtifactValues.content as string }),
+    fullMarkdown: newArtifactValues.content as string,
   };
 
   const newArtifact: ArtifactV3 = {

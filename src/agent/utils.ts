@@ -1,6 +1,5 @@
-import { isArtifactCodeContent } from "@/lib/artifact_content_types";
 import { BaseStore, LangGraphRunnableConfig } from "@langchain/langgraph";
-import { ArtifactCodeV3, ArtifactMarkdownV3, Reflections } from "../types";
+import { ArtifactMarkdownV3, Reflections } from "../types";
 import { initChatModel } from "langchain/chat_models/universal";
 
 export const formatReflections = (
@@ -103,26 +102,18 @@ export const ensureStoreInConfig = (
 };
 
 export const formatArtifactContent = (
-  content: ArtifactMarkdownV3 | ArtifactCodeV3,
+  content: ArtifactMarkdownV3,
   shortenContent?: boolean
 ): string => {
-  let artifactContent: string;
-
-  if (isArtifactCodeContent(content)) {
-    artifactContent = shortenContent
-      ? content.code?.slice(0, 500)
-      : content.code;
-  } else {
-    artifactContent = shortenContent
-      ? content.fullMarkdown?.slice(0, 500)
-      : content.fullMarkdown;
-  }
+  const artifactContent = shortenContent
+    ? content.fullMarkdown?.slice(0, 500)
+    : content.fullMarkdown;
   return `Title: ${content.title}\nArtifact type: ${content.type}\nContent: ${artifactContent}`;
 };
 
 export const formatArtifactContentWithTemplate = (
   template: string,
-  content: ArtifactMarkdownV3 | ArtifactCodeV3,
+  content: ArtifactMarkdownV3,
   shortenContent?: boolean
 ): string => {
   return template.replace(

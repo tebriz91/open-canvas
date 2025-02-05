@@ -11,17 +11,12 @@ export const LS_HAS_SEEN_MODEL_DROPDOWN_ALERT =
 export const OC_HAS_SEEN_CUSTOM_ASSISTANTS_ALERT =
   "oc_has_seen_custom_assistants_alert";
 export const DEFAULT_INPUTS = {
-  highlightedCode: undefined,
   highlightedText: undefined,
   next: undefined,
   language: undefined,
   artifactLength: undefined,
   regenerateWithEmojis: undefined,
   readingLevel: undefined,
-  addComments: undefined,
-  addLogs: undefined,
-  fixBugs: undefined,
-  portLanguage: undefined,
   customQuickActionId: undefined,
 };
 

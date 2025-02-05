@@ -2,7 +2,6 @@ import { ThreadPrimitive } from "@assistant-ui/react";
 import { ArrowDownIcon, SquarePen } from "lucide-react";
 import { Dispatch, FC, SetStateAction } from "react";
 import { TooltipIconButton } from "../ui/assistant-ui/tooltip-icon-button";
-import { ProgrammingLanguageOptions } from "@/types";
 import ModelSelector from "./model-selector";
 import { ReflectionsDialog } from "../reflections-dialog/ReflectionsDialog";
 import { ThreadHistory } from "./thread-history";
@@ -33,8 +32,7 @@ export interface ThreadProps {
   userId: string | undefined;
   hasChatStarted: boolean;
   handleQuickStart: (
-    type: "text" | "code",
-    language?: ProgrammingLanguageOptions
+    type: "text",
   ) => void;
   setChatStarted: Dispatch<SetStateAction<boolean>>;
   switchSelectedThreadCallback: (thread: ThreadType) => void;

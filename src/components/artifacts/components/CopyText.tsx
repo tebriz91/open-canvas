@@ -1,12 +1,11 @@
 import { motion } from "framer-motion";
 import { TooltipIconButton } from "@/components/ui/assistant-ui/tooltip-icon-button";
 import { useToast } from "@/hooks/use-toast";
-import { isArtifactCodeContent } from "@/lib/artifact_content_types";
-import { ArtifactCodeV3, ArtifactMarkdownV3 } from "@/types";
+import { ArtifactMarkdownV3 } from "@/types";
 import { Copy } from "lucide-react";
 
 interface CopyTextProps {
-  currentArtifactContent: ArtifactCodeV3 | ArtifactMarkdownV3;
+  currentArtifactContent: ArtifactMarkdownV3;
 }
 
 export function CopyText(props: CopyTextProps) {
@@ -26,9 +25,7 @@ export function CopyText(props: CopyTextProps) {
         delayDuration={400}
         onClick={() => {
           try {
-            const text = isArtifactCodeContent(props.currentArtifactContent)
-              ? props.currentArtifactContent.code
-              : props.currentArtifactContent.fullMarkdown;
+            const text = props.currentArtifactContent.fullMarkdown;
             navigator.clipboard.writeText(text).then(() => {
               toast({
                 title: "Copied to clipboard",

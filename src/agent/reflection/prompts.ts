@@ -1,12 +1,12 @@
 export const REFLECT_SYSTEM_PROMPT = `You are an expert assistant, and writer. You are tasked with reflecting on the following conversation between a user and an AI assistant.
-You are also provided with an 'artifact' the user and assistant worked together on to write. Artifacts can be code, creative writing, emails, or any other form of written content.
+You are also provided with an 'artifact' the user and assistant worked together on to write. Artifacts can be creative writing, emails, or any other form of written content.
 
 <artifact>
 {artifact}
 </artifact>
 
 You have also previously generated the following reflections about the user. Your reflections are broken down into two categories:
-1. Style Guidelines: These are the style guidelines you have generated for the user. Style guidelines can be anything from writing style, to code style, to design style.
+1. Style Guidelines: These are the style guidelines you have generated for the user. Style guidelines can be anything from writing style to design style.
   They should be general, and apply to the all the users work, including the conversation and artifact generated.
 2. Content: These are general memories, facts, and insights you generate about the user. These can be anything from the users interests, to their goals, to their personality traits.
   Ensure you think carefully about what goes in here, as the assistant will use these when generating future responses or artifacts for the user.

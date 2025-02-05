@@ -2,7 +2,7 @@
 
 ## Project Overview
 
-Open Canvas is an open-source web application for collaborating with agents to better write documents. It provides an interactive canvas where users can work with AI to create and edit both text and code content.
+Open Canvas is an open-source web application for collaborating with agents to better write documents. It provides an interactive canvas where users can work with AI to create and edit text content.
 
 ## Tech Stack
 
@@ -17,7 +17,7 @@ Open Canvas is an open-source web application for collaborating with agents to b
 ## Key Features
 
 - Real-time collaboration with AI agents
-- Support for both text and code editing
+- Support for text editing and markdown
 - Memory system for personalized interactions
 - Custom quick actions
 - Artifact versioning
@@ -436,7 +436,7 @@ The flow works like this:
 
 ### Frontend Canvas Architecture
 
-The canvas is the main interface component that manages the interaction between the chat interface and artifact rendering:
+The canvas is the main interface component that manages the interaction between the chat interface and markdown rendering:
 
 ```tsx
 // src/components/canvas/canvas.tsx
@@ -467,8 +467,8 @@ Key features:
 
 - Split view layout with dynamic resizing
 - Smooth transitions between states
-- Integrated chat and artifact rendering
-- Quick start functionality for both text and code
+- Integrated chat and markdown rendering
+- Quick start functionality for text documents
 
 #### Content Composer
 

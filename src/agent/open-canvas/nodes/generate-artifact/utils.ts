@@ -1,5 +1,5 @@
 import { NEW_ARTIFACT_PROMPT } from "../../prompts";
-import { ArtifactCodeV3, ArtifactMarkdownV3 } from "@/types";
+import { ArtifactMarkdownV3 } from "@/types";
 import { ToolCall } from "@langchain/core/messages/tool";
 
 export const formatNewArtifactPrompt = (
@@ -16,19 +16,8 @@ export const formatNewArtifactPrompt = (
 
 export const createArtifactContent = (
   toolCall: ToolCall | undefined
-): ArtifactCodeV3 | ArtifactMarkdownV3 => {
+): ArtifactMarkdownV3 => {
   const toolArgs = toolCall?.args;
-  const artifactType = toolArgs?.type;
-
-  if (artifactType === "code") {
-    return {
-      index: 1,
-      type: "code",
-      title: toolArgs?.title,
-      code: toolArgs?.artifact,
-      language: toolArgs?.language,
-    };
-  }
 
   return {
     index: 1,
