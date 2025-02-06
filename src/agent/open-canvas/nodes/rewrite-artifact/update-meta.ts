@@ -22,7 +22,7 @@ export async function optionallyUpdateArtifactMeta(
         {
           name: "optionallyUpdateArtifactMeta",
           schema: OPTIONALLY_UPDATE_ARTIFACT_META_SCHEMA,
-          description: "Update the artifact meta information, if necessary.",
+          description: "Обновляет мета-информацию артефакта, если необходимо.",
         },
       ],
       {

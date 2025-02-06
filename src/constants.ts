@@ -31,7 +31,7 @@ export const AZURE_MODELS = [
 
 export const OPENAI_MODELS = [
   {
-    name: "gpt-4o-latest",
+    name: "gpt-4o",
     label: "GPT-4o",
     isNew: false,
   },

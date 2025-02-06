@@ -28,13 +28,14 @@ export interface ActionsToolbarProps {
 const toolbarOptions: ToolbarOption[] = [
   {
     id: "translate",
-    tooltip: "Translate",
+    tooltip: "Перевести текст",
     icon: <Languages className="w-[26px] h-[26px]" />,
     component: (props: SharedComponentProps) => <TranslateOptions {...props} />,
+
   },
   {
     id: "readingLevel",
-    tooltip: "Reading level",
+    tooltip: "Сложность текста",
     icon: <BookOpen className="w-[26px] h-[26px]" />,
     component: (props: SharedComponentProps) => (
       <ReadingLevelOptions {...props} />
@@ -42,16 +43,18 @@ const toolbarOptions: ToolbarOption[] = [
   },
   {
     id: "adjustLength",
-    tooltip: "Adjust the length",
+    tooltip: "Длина текста",
     icon: <SlidersVertical className="w-[26px] h-[26px]" />,
     component: (props: SharedComponentProps) => <LengthOptions {...props} />,
+
   },
   {
     id: "addEmojis",
-    tooltip: "Add emojis",
+    tooltip: "Добавить эмодзи",
     icon: <SmilePlus className="w-[26px] h-[26px]" />,
     component: null,
   },
+
 ];
 
 export function ActionsToolbar(props: ActionsToolbarProps) {
@@ -142,10 +145,11 @@ export function ActionsToolbar(props: ActionsToolbarProps) {
         <TooltipIconButton
           tooltip={
             props.isTextSelected
-              ? "Quick actions disabled while text is selected"
-              : "Writing tools"
+              ? "Быстрые действия отключены, пока текст выбран"
+              : "Инструменты для редактирования текста"
           }
           variant="outline"
+
           className={cn(
             "transition-colors w-[48px] h-[48px] p-0 rounded-xl",
             props.isTextSelected

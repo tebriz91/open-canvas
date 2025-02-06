@@ -21,17 +21,18 @@ export function ConfirmClearDialog(props: ReflectionsProps) {
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
         <Button onClick={() => setOpen(true)} variant="destructive">
-          <TighterText>Clear reflections</TighterText>
+          <TighterText>Очистить размышления</TighterText>
         </Button>
       </DialogTrigger>
       <DialogContent className="max-w-xl p-8 bg-white rounded-lg shadow-xl">
+
         <DialogHeader>
           <DialogDescription className="mt-2 text-md text-center font-light text-red-500">
             <TighterText>
-              Are you sure you want to clear all reflections? This action can
-              not be undone.
+              Вы уверены, что хотите очистить все размышления? Это действие нельзя отменить.
             </TighterText>
           </DialogDescription>
+
         </DialogHeader>
         <Button
           onClick={async () => {
@@ -40,14 +41,16 @@ export function ConfirmClearDialog(props: ReflectionsProps) {
           }}
           variant="destructive"
         >
-          <TighterText>Clear reflections</TighterText>
+          <TighterText>Очистить размышления</TighterText>
         </Button>
         <div className="mt-6 flex justify-end">
           <Button onClick={() => setOpen(false)} variant="outline">
-            <TighterText>Cancel</TighterText>
+
+            <TighterText>Отменить</TighterText>
           </Button>
         </div>
       </DialogContent>
+
     </Dialog>
   );
 }

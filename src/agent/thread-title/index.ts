@@ -23,9 +23,9 @@ export const generateTitle = async (
 
   const generateTitleTool = {
     name: "generate_title",
-    description: "Generate a concise title for the conversation.",
+    description: "Генерирует краткое название для беседы.",
     schema: z.object({
-      title: z.string().describe("The generated title for the conversation."),
+      title: z.string().describe("Сгенерированное название для беседы."),
     }),
   };
 

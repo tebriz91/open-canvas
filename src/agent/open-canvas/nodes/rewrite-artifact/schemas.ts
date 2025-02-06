@@ -1,11 +1,11 @@
 import { z } from "zod";
 
 export const OPTIONALLY_UPDATE_ARTIFACT_META_SCHEMA = z.object({
-  type: z.literal("text").describe("The type of the artifact content."),
+  type: z.literal("text").describe("Тип контента артефакта."),
   title: z
     .string()
     .optional()
     .describe(
-      "The new title to give the artifact. ONLY update this if the user is making a request which changes the subject/topic of the artifact."
+      "Новое название для артефакта. ИЗМЕНЯЙТЕ только если пользователь запрашивает изменение темы артефакта."
     ),
 });

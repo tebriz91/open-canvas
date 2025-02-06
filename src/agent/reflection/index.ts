@@ -31,19 +31,19 @@ export const reflect = async (
 
   const generateReflectionTool = {
     name: "generate_reflections",
-    description: "Generate reflections based on the context provided.",
+    description: "Генерирует размышления на основе предоставленного контекста.",
     schema: z.object({
       styleRules: z
         .array(z.string())
-        .describe("The complete new list of style rules and guidelines."),
+        .describe("Полный новый список правил и рекомендаций по стилю."),
       content: z
         .array(z.string())
-        .describe("The complete new list of memories/facts about the user."),
+        .describe("Полный новый список воспоминаний/фактов о пользователе."),
     }),
   };
 
   const model = new ChatAnthropic({
-    model: "claude-3-5-sonnet-20240620",
+    model: "claude-3-5-sonnet-20241022",
     temperature: 0,
   }).bindTools([generateReflectionTool], {
     tool_choice: "generate_reflections",

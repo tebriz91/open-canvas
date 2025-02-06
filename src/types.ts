@@ -81,11 +81,10 @@ export type LanguageOptions =
 export type ArtifactLengthOptions = "shortest" | "short" | "long" | "longest";
 
 export type ReadingLevelOptions =
-  | "pirate"
-  | "child"
-  | "teenager"
-  | "college"
-  | "phd";
+  | "базовый"
+  | "средний"
+  | "продвинутый"
+  | "экспертный";
 
 export interface Reflections {
   /**

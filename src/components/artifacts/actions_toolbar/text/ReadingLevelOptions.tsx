@@ -3,7 +3,6 @@ import {
   GraduationCap,
   PersonStanding,
   School,
-  Swords,
 } from "lucide-react";
 import { ReadingLevelOptions as ReadingLevelOptionsType } from "@/types";
 import { TooltipIconButton } from "@/components/ui/assistant-ui/tooltip-icon-button";
@@ -26,51 +25,49 @@ export function ReadingLevelOptions(props: ReadingLevelOptionsProps) {
 
   return (
     <div className="flex flex-col gap-3 items-center w-full">
+
       <TooltipIconButton
-        tooltip="PhD"
+        tooltip="Экспертный"
         variant="ghost"
         className="transition-colors w-[36px] h-[36px]"
         delayDuration={400}
-        onClick={async () => await handleSubmit("phd")}
+        onClick={async () => await handleSubmit("экспертный")}
+
       >
         <GraduationCap />
+
       </TooltipIconButton>
       <TooltipIconButton
-        tooltip="College"
+        tooltip="Продвинутый"
         variant="ghost"
         className="transition-colors w-[36px] h-[36px]"
         delayDuration={400}
-        onClick={async () => await handleSubmit("college")}
+        onClick={async () => await handleSubmit("продвинутый")}
+      >
+        <PersonStanding />
+
+      </TooltipIconButton>
+      <TooltipIconButton
+        tooltip="Средний"
+        variant="ghost"
+        className="transition-colors w-[36px] h-[36px]"
+        delayDuration={400}
+        onClick={async () => await handleSubmit("средний")}
+
       >
         <School />
       </TooltipIconButton>
       <TooltipIconButton
-        tooltip="Teenager"
+        tooltip="Базовый"
         variant="ghost"
         className="transition-colors w-[36px] h-[36px]"
         delayDuration={400}
-        onClick={async () => await handleSubmit("teenager")}
-      >
-        <PersonStanding />
-      </TooltipIconButton>
-      <TooltipIconButton
-        tooltip="Child"
-        variant="ghost"
-        className="transition-colors w-[36px] h-[36px]"
-        delayDuration={400}
-        onClick={async () => await handleSubmit("child")}
+        onClick={async () => await handleSubmit("базовый")}
+
       >
         <Baby />
       </TooltipIconButton>
-      <TooltipIconButton
-        tooltip="Pirate"
-        variant="ghost"
-        className="transition-colors w-[36px] h-[36px]"
-        delayDuration={400}
-        onClick={async () => await handleSubmit("pirate")}
-      >
-        <Swords />
-      </TooltipIconButton>
     </div>
+
   );
 }

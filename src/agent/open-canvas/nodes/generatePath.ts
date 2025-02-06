@@ -81,7 +81,7 @@ export const generatePath = async (
     z.object({
       route: z
         .enum(["replyToGeneralInput", artifactRoute])
-        .describe("The route to take based on the user's query."),
+        .describe("Маршрут для выполнения на основе запроса пользователя."),
     }),
     {
       name: "route_query",

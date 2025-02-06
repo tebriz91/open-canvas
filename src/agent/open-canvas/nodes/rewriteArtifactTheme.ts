@@ -47,27 +47,24 @@ export const rewriteArtifactTheme = async (
       "{newLanguage}",
       state.language
     ).replace("{artifactContent}", currentArtifactContent.fullMarkdown);
-  } else if (state.readingLevel && state.readingLevel !== "pirate") {
+  } else if (state.readingLevel && state.readingLevel !== "базовый") {
     let newReadingLevel = "";
     switch (state.readingLevel) {
-      case "child":
-        newReadingLevel = "elementary school student";
+      case "средний":
+        newReadingLevel = "средний";
         break;
-      case "teenager":
-        newReadingLevel = "high school student";
+      case "продвинутый":
+        newReadingLevel = "продвинутый";
         break;
-      case "college":
-        newReadingLevel = "college student";
-        break;
-      case "phd":
-        newReadingLevel = "PhD student";
+      case "экспертный":
+        newReadingLevel = "экспертный";
         break;
     }
     formattedPrompt = CHANGE_ARTIFACT_READING_LEVEL_PROMPT.replace(
       "{newReadingLevel}",
       newReadingLevel
     ).replace("{artifactContent}", currentArtifactContent.fullMarkdown);
-  } else if (state.readingLevel && state.readingLevel === "pirate") {
+  } else if (state.readingLevel && state.readingLevel === "базовый") {
     formattedPrompt = CHANGE_ARTIFACT_TO_PIRATE_PROMPT.replace(
       "{artifactContent}",
       currentArtifactContent.fullMarkdown
