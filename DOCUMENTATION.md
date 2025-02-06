@@ -507,3 +507,187 @@ Features:
 - Thread management
 - Quick start templates
 - Integration with LangChain messages
+
+## API Architecture and Data Flow
+
+### API Layer Overview
+
+The application uses a multi-layered API architecture:
+
+1. **Frontend Client Layer** (`src/hooks/utils.ts`)
+   ```typescript
+   // Client creation with automatic API routing
+   export const createClient = () => {
+     const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3000/api";
+     return new Client({ apiUrl });
+   };
+   ```
+
+2. **Next.js API Proxy Layer** (`src/app/api/[..._path]/route.ts`)
+   - Acts as a secure middleware between frontend and LangGraph
+   - Handles authentication and request transformation
+   - Adds user context to requests
+   - Manages CORS and error handling
+
+3. **LangGraph Backend Layer**
+   - Handles AI model interactions
+   - Manages thread and assistant state
+   - Provides persistent storage
+
+### Request Flow
+
+Here's how a typical request flows through the system:
+
+1. **Frontend Initialization**
+   ```typescript
+   // Create client instance
+   const client = createClient();
+   
+   // Make API request (e.g., create thread)
+   const thread = await client.threads.create({
+     metadata: {
+       supabase_user_id: userId,
+       customModelName: "gpt-4"
+     }
+   });
+   ```
+
+2. **Next.js API Processing**
+   ```typescript
+   // 1. Authentication check
+   const user = await verifyUserAuthenticated();
+   
+   // 2. Request transformation
+   const path = req.nextUrl.pathname.replace(/^\/?api\//, "");
+   
+   // 3. Add user context
+   const options = {
+     method,
+     headers: { "x-api-key": process.env.LANGCHAIN_API_KEY },
+     body: JSON.stringify({
+       ...parsedBody,
+       config: {
+         configurable: {
+           supabase_user_id: user.id,
+           ...parsedBody.config?.configurable
+         }
+       }
+     })
+   };
+   
+   // 4. Forward to LangGraph
+   const res = await fetch(`${LANGGRAPH_API_URL}/${path}`, options);
+   ```
+
+3. **Response Handling**
+   - Responses are streamed back through the same layers
+   - Frontend updates state based on streamed events
+   - Error handling at each layer
+
+### Key Components and Their Interactions
+
+#### Thread Management
+
+```typescript
+// Frontend hook (useThread)
+export function useThread() {
+  // State management
+  const [threadId, setThreadId] = useState<string>();
+  const [userThreads, setUserThreads] = useState<Thread[]>([]);
+
+  // Thread creation with API interaction
+  const createThread = async (customModelName, userId) => {
+    const client = createClient();
+    const thread = await client.threads.create({
+      metadata: { supabase_user_id: userId, customModelName }
+    });
+    // Update local state and cookies
+    setThreadId(thread.thread_id);
+    setCookie(THREAD_ID_COOKIE_NAME, thread.thread_id);
+  };
+}
+```
+
+#### Streaming Response Processing
+
+```typescript
+// Handle streaming responses from LangGraph
+const streamMessage = async (params: GraphInput) => {
+  const stream = client.runs.stream(threadId, assistantId, {
+    input,
+    streamMode: "events",
+    config: { configurable: { customModelName } }
+  });
+
+  for await (const chunk of stream) {
+    // Process different event types
+    if (chunk.data.event === "on_chat_model_stream") {
+      // Handle streaming message content
+    }
+    if (chunk.data.event === "on_chat_model_end") {
+      // Handle completion
+    }
+  }
+};
+```
+
+### Store Operations
+
+The application includes a key-value store system for persistent data:
+
+1. **Store API Routes**
+   ```typescript
+   // PUT operation
+   export async function POST(req: NextRequest) {
+     const user = await verifyUserAuthenticated();
+     const { namespace, key, value } = await req.json();
+     
+     const lgClient = new Client({
+       apiKey: process.env.LANGCHAIN_API_KEY,
+       apiUrl: LANGGRAPH_API_URL
+     });
+     
+     await lgClient.store.putItem(namespace, key, value);
+   }
+   ```
+
+2. **Store Usage**
+   - Manages reflections storage
+   - Handles custom quick actions
+   - Stores user preferences
+   - Organizes data by namespaces
+
+### Security Considerations
+
+1. **Authentication**
+   - Every request is authenticated via Supabase
+   - API keys are never exposed to frontend
+   - Session management through middleware
+
+2. **Request Transformation**
+   - User context added server-side
+   - Request validation before forwarding
+   - Error handling and logging
+
+3. **CORS and Headers**
+   - Proper CORS headers for cross-origin requests
+   - Secure header handling and validation
+
+### Error Handling
+
+Each layer includes comprehensive error handling:
+
+1. **Frontend Layer**
+   - Catches and logs API errors
+   - Provides user feedback
+   - Handles retry logic where appropriate
+
+2. **API Proxy Layer**
+   - Validates requests and user authentication
+   - Transforms error responses
+   - Maintains detailed error logging
+
+3. **Response Processing**
+   - Handles stream interruptions
+   - Processes partial responses
+   - Manages state recovery
