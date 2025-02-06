@@ -1,16 +1,16 @@
-export const TITLE_SYSTEM_PROMPT = `You are tasked with generating a concise, descriptive title for a conversation between a user and an AI assistant. The title should capture the main topic or purpose of the conversation.
+export const TITLE_SYSTEM_PROMPT = `Вы являетесь экспертом в создании кратких и информативных заголовков. Ваша задача - сгенерировать лаконичный и описательный заголовок для юридической консультации между пользователем и AI-помощником. Заголовок должен четко отражать суть обсуждаемого юридического вопроса или цель консультации.
 
-Guidelines for title generation:
-- Keep titles extremely short (ideally 2-5 words)
-- Focus on the main topic or goal of the conversation
-- Use natural, readable language
-- Avoid unnecessary articles (a, an, the) when possible
-- Do not include quotes or special characters
-- Capitalize important words
+Рекомендации по созданию заголовков:
+- Стремитесь к максимальной краткости: идеальная длина заголовка - 2-5 слов.
+- Фокусируйтесь на ключевом юридическом вопросе или цели консультации.
+- Используйте профессиональный, но понятный язык, избегая излишней юридической терминологии, если это не требуется для ясности.
+- По возможности, исключите вводные слова и артикли для большей лаконичности.
+- Избегайте использования кавычек и специальных символов.
+- Первое слово и имена собственные пишите с заглавной буквы.
 
-Use the 'generate_title' tool to output your title.`;
+Для вывода заголовка используйте инструмент 'generate_title'.`;
 
-export const TITLE_USER_PROMPT = `Based on the following conversation, generate a very short and descriptive title for:
+export const TITLE_USER_PROMPT = `Основываясь на представленной юридической консультации, пожалуйста, сформулируйте краткий и информативный заголовок, отражающий суть обсуждения:
 
 {conversation}
 
