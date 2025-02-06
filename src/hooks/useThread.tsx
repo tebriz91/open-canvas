@@ -16,11 +16,35 @@ export function useThread() {
   const [modelName, setModelName] =
     useState<ALL_MODEL_NAMES>(DEFAULT_MODEL_NAME);
 
+  /**
+   * Creates a new thread with specified model and user ID
+   * 
+   * Example:
+   * ```typescript
+   * // Create a thread with default model
+   * const thread = await createThread(DEFAULT_MODEL_NAME, "user_123");
+   * 
+   * // Create a thread with specific model
+   * const thread = await createThread("gpt-4", "user_123");
+   * ```
+   * 
+   * The function will:
+   * 1. Create a thread via LangGraph API
+   * 2. Store thread ID in state and cookies
+   * 3. Update model name in state
+   * 4. Refresh user's thread list
+   * 
+   * @param customModelName - The AI model to use (e.g., "gpt-4", "gpt-3.5-turbo")
+   * @param userId - Supabase user ID for thread ownership
+   * @returns Created thread object or undefined if creation fails
+   */
   const createThread = async (
     customModelName: ALL_MODEL_NAMES = DEFAULT_MODEL_NAME,
     userId: string
   ): Promise<Thread | undefined> => {
+    // Initialize LangGraph client
     const client = createClient();
+    
     try {
       console.log(
         "Creating thread with customModelName:",
@@ -28,16 +52,33 @@ export function useThread() {
         "for userId:",
         userId
       );
+
+      // Create thread with metadata
+      // Example request body:
+      // {
+      //   "metadata": {
+      //     "supabase_user_id": "user_123",
+      //     "customModelName": "gpt-4"
+      //   }
+      // }
       const thread = await client.threads.create({
         metadata: {
           supabase_user_id: userId,
           customModelName,
         },
       });
+
+      // Store thread ID in state and cookies for persistence
+      // Example thread.thread_id: "thread_abc123"
       setThreadId(thread.thread_id);
       setCookie(THREAD_ID_COOKIE_NAME, thread.thread_id);
+      
+      // Update model name in state for UI
       setModelName(customModelName);
+      
+      // Refresh thread list to include new thread
       await getUserThreads(userId);
+      
       console.log(
         "Thread created successfully with threadId:",
         thread.thread_id
