@@ -31,10 +31,26 @@ export const AZURE_MODELS = [
 
 export const OPENAI_MODELS = [
   {
+    name: "gpt-4o-latest",
+    label: "GPT-4o",
+    isNew: false,
+  },
+  {
     name: "gpt-4o-mini",
     label: "GPT-4o mini",
     isNew: false,
   },
+  // {
+  //   name: "openai/o1-mini",
+  //   label: "o1 mini",
+  //   isNew: false,
+  // },
+
+  // {
+  //   name: "openai/o3-mini",
+  //   label: "o3 mini",
+  //   isNew: false,
+  // },
 ];
 
 /**
@@ -53,10 +69,10 @@ export const ANTHROPIC_MODELS = [
     name: "claude-3-5-haiku-20241022",
     label: "Claude 3.5 Haiku",
   },
-  // {
-  //   name: "claude-3-5-sonnet-20240620",
-  //   label: "Claude 3.5 Sonnet",
-  // },
+  {
+    name: "claude-3-5-sonnet-20241022",
+    label: "Claude 3.5 Sonnet",
+  },
 ];
 export const FIREWORKS_MODELS = [
   {
@@ -73,15 +89,16 @@ export const GEMINI_MODELS = [
     isNew: false,
   },
   {
-    name: "gemini-2.0-flash-exp",
+    name: "gemini-2.0-flash-001",
     label: "Gemini 2.0 Flash",
-    isNew: true,
+    isNew: false,
   },
 ];
 export const DEFAULT_MODEL_NAME: ALL_MODEL_NAMES = "gpt-4o-mini";
 export type OPENAI_MODEL_NAMES = (typeof OPENAI_MODELS)[number]["name"];
 export type ANTHROPIC_MODEL_NAMES = (typeof ANTHROPIC_MODELS)[number]["name"];
 export type FIREWORKS_MODEL_NAMES = (typeof FIREWORKS_MODELS)[number]["name"];
+
 export type GEMINI_MODEL_NAMES = (typeof GEMINI_MODELS)[number]["name"];
 export type AZURE_MODEL_NAMES = (typeof AZURE_MODELS)[number]["modelName"];
 export type OLLAMA_MODEL_NAMES = (typeof OLLAMA_MODELS)[number]["name"];
