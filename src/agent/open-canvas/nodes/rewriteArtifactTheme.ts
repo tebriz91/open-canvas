@@ -9,7 +9,6 @@ import {
   CHANGE_ARTIFACT_LANGUAGE_PROMPT,
   CHANGE_ARTIFACT_LENGTH_PROMPT,
   CHANGE_ARTIFACT_READING_LEVEL_PROMPT,
-  CHANGE_ARTIFACT_TO_PIRATE_PROMPT,
 } from "../prompts";
 import { OpenCanvasGraphAnnotation, OpenCanvasGraphReturnType } from "../state";
 
@@ -64,11 +63,6 @@ export const rewriteArtifactTheme = async (
       "{newReadingLevel}",
       newReadingLevel
     ).replace("{artifactContent}", currentArtifactContent.fullMarkdown);
-  } else if (state.readingLevel && state.readingLevel === "базовый") {
-    formattedPrompt = CHANGE_ARTIFACT_TO_PIRATE_PROMPT.replace(
-      "{artifactContent}",
-      currentArtifactContent.fullMarkdown
-    );
   } else if (state.artifactLength) {
     let newLength = "";
     switch (state.artifactLength) {
