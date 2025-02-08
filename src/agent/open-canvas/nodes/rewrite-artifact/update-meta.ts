@@ -10,6 +10,7 @@ import { GET_TITLE_TYPE_REWRITE_ARTIFACT } from "../../prompts";
 import { OPTIONALLY_UPDATE_ARTIFACT_META_SCHEMA } from "./schemas";
 import { ToolCall } from "@langchain/core/messages/tool";
 import { getFormattedReflections } from "../../../utils";
+import { HumanMessage } from "@langchain/core/messages";
 
 export async function optionallyUpdateArtifactMeta(
   state: typeof OpenCanvasGraphAnnotation.State,
@@ -49,11 +50,20 @@ export async function optionallyUpdateArtifactMeta(
       formatArtifactContent(currentArtifactContent, true)
     ).replace("{reflections}", memoriesAsString);
 
-  const recentHumanMessage = state.messages.findLast(
-    (message) => message.getType() === "human"
-  );
-  if (!recentHumanMessage) {
-    throw new Error("No recent human message found");
+  let recentHumanMessage;
+  // For RAG rewrite, create a synthetic human message if none exists
+  if (state.customQuickActionId === "rag_rewrite") {
+    recentHumanMessage = new HumanMessage({
+      content:
+        "Please update the metadata if needed based on the retrieved context.",
+    });
+  } else {
+    recentHumanMessage = state.messages.findLast(
+      (message) => message.getType() === "human"
+    );
+    if (!recentHumanMessage) {
+      throw new Error("No recent human message found");
+    }
   }
 
   const optionallyUpdateArtifactResponse = await toolCallingModel.invoke([

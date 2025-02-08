@@ -1,0 +1,108 @@
+{
+  error: Error: Vector store is empty
+      at performVectorSearch (C:\Users\tebri\OneDrive\Documents\ts\open-canvas\src\rag\vector_store.ts:88:27)
+      at async retryWithBackoff (C:\Users\tebri\OneDrive\Documents\ts\open-canvas\src\agent\open-canvas\nodes\ragRetrieval.ts:25:14)
+      at async RunnableCallable.ragRetrievalNode (C:\Users\tebri\OneDrive\Documents\ts\open-canvas\src\agent\open-canvas\nodes\ragRetrieval.ts:142:30)
+      at async RunnableCallable.invoke (C:\Users\tebri\OneDrive\Documents\ts\open-canvas\node_modules\@langchain\langgraph\dist\utils.cjs:82:27)
+      at async RunnableSequence.invoke (C:\Users\tebri\OneDrive\Documents\ts\open-canvas\node_modules\@langchain\core\dist\runnables\base.cjs:1162:33)
+      at async _runWithRetry (C:\Users\tebri\OneDrive\Documents\ts\open-canvas\node_modules\@langchain\langgraph\dist\pregel\retry.cjs:99:22)
+      at async executeTasksWithRetry (C:\Users\tebri\OneDrive\Documents\ts\open-canvas\node_modules\@langchain\langgraph\dist\pregel\retry.cjs:72:29)
+      at async CompiledStateGraph._streamIterator (C:\Users\tebri\OneDrive\Documents\ts\open-canvas\node_modules\@langchain\langgraph\dist\pregel\index.cjs:764:48)
+      at async Object.pull (C:\Users\tebri\OneDrive\Documents\ts\open-canvas\node_modules\@langchain\core\dist\utils\stream.cjs:103:41),
+  level: 'error',
+  message: 'Vector search failed',
+  timestamp: '2025-02-08T16:59:13.620Z'
+}
+{
+  error: Error: Vector store is empty
+      at performVectorSearch (C:\Users\tebri\OneDrive\Documents\ts\open-canvas\src\rag\vector_store.ts:88:27)
+      at runNextTicks (node:internal/process/task_queues:65:5)
+      at process.processTimers (node:internal/timers:526:9)
+      at async retryWithBackoff (C:\Users\tebri\OneDrive\Documents\ts\open-canvas\src\agent\open-canvas\nodes\ragRetrieval.ts:25:14)
+      at async RunnableCallable.ragRetrievalNode (C:\Users\tebri\OneDrive\Documents\ts\open-canvas\src\agent\open-canvas\nodes\ragRetrieval.ts:142:30)
+      at async RunnableCallable.invoke (C:\Users\tebri\OneDrive\Documents\ts\open-canvas\node_modules\@langchain\langgraph\dist\utils.cjs:82:27)
+      at async RunnableSequence.invoke (C:\Users\tebri\OneDrive\Documents\ts\open-canvas\node_modules\@langchain\core\dist\runnables\base.cjs:1162:33)
+      at async _runWithRetry (C:\Users\tebri\OneDrive\Documents\ts\open-canvas\node_modules\@langchain\langgraph\dist\pregel\retry.cjs:99:22)
+      at async executeTasksWithRetry (C:\Users\tebri\OneDrive\Documents\ts\open-canvas\node_modules\@langchain\langgraph\dist\pregel\retry.cjs:72:29)
+      at async CompiledStateGraph._streamIterator (C:\Users\tebri\OneDrive\Documents\ts\open-canvas\node_modules\@langchain\langgraph\dist\pregel\index.cjs:764:48),
+  level: 'error',
+  message: 'Vector search failed',
+  timestamp: '2025-02-08T16:59:14.636Z'
+}
+{
+  error: Error: Vector store is empty
+      at performVectorSearch (C:\Users\tebri\OneDrive\Documents\ts\open-canvas\src\rag\vector_store.ts:88:27)
+      at runNextTicks (node:internal/process/task_queues:65:5)
+      at process.processTimers (node:internal/timers:526:9)
+      at async retryWithBackoff (C:\Users\tebri\OneDrive\Documents\ts\open-canvas\src\agent\open-canvas\nodes\ragRetrieval.ts:25:14)
+      at async RunnableCallable.ragRetrievalNode (C:\Users\tebri\OneDrive\Documents\ts\open-canvas\src\agent\open-canvas\nodes\ragRetrieval.ts:142:30)
+      at async RunnableCallable.invoke (C:\Users\tebri\OneDrive\Documents\ts\open-canvas\node_modules\@langchain\langgraph\dist\utils.cjs:82:27)
+      at async RunnableSequence.invoke (C:\Users\tebri\OneDrive\Documents\ts\open-canvas\node_modules\@langchain\core\dist\runnables\base.cjs:1162:33)
+      at async _runWithRetry (C:\Users\tebri\OneDrive\Documents\ts\open-canvas\node_modules\@langchain\langgraph\dist\pregel\retry.cjs:99:22)
+      at async executeTasksWithRetry (C:\Users\tebri\OneDrive\Documents\ts\open-canvas\node_modules\@langchain\langgraph\dist\pregel\retry.cjs:72:29)
+      at async CompiledStateGraph._streamIterator (C:\Users\tebri\OneDrive\Documents\ts\open-canvas\node_modules\@langchain\langgraph\dist\pregel\index.cjs:764:48),
+  level: 'error',
+  message: 'Vector search failed',
+  timestamp: '2025-02-08T16:59:16.653Z'
+}
+{
+  error: 'Vector store is empty',
+  type: 'Error',
+  level: 'error',
+  message: 'Error during RAG retrieval',
+  timestamp: '2025-02-08T16:59:16.655Z'
+}
+{
+  error: Error: Vector store is empty
+      at performVectorSearch (C:\Users\tebri\OneDrive\Documents\ts\open-canvas\src\rag\vector_store.ts:88:27)
+      at runNextTicks (node:internal/process/task_queues:65:5)
+      at process.processTimers (node:internal/timers:526:9)
+      at async retryWithBackoff (C:\Users\tebri\OneDrive\Documents\ts\open-canvas\src\agent\open-canvas\nodes\ragRetrieval.ts:25:14)
+      at async RunnableCallable.ragRetrievalNode (C:\Users\tebri\OneDrive\Documents\ts\open-canvas\src\agent\open-canvas\nodes\ragRetrieval.ts:142:30)
+      at async RunnableCallable.invoke (C:\Users\tebri\OneDrive\Documents\ts\open-canvas\node_modules\@langchain\langgraph\dist\utils.cjs:82:27)
+      at async RunnableSequence.invoke (C:\Users\tebri\OneDrive\Documents\ts\open-canvas\node_modules\@langchain\core\dist\runnables\base.cjs:1162:33)
+      at async _runWithRetry (C:\Users\tebri\OneDrive\Documents\ts\open-canvas\node_modules\@langchain\langgraph\dist\pregel\retry.cjs:99:22)
+      at async executeTasksWithRetry (C:\Users\tebri\OneDrive\Documents\ts\open-canvas\node_modules\@langchain\langgraph\dist\pregel\retry.cjs:72:29)
+      at async CompiledStateGraph._streamIterator (C:\Users\tebri\OneDrive\Documents\ts\open-canvas\node_modules\@langchain\langgraph\dist\pregel\index.cjs:764:48),
+  level: 'error',
+  message: 'Vector search failed',
+  timestamp: '2025-02-08T17:04:07.598Z'
+}
+{
+  error: Error: Vector store is empty
+      at performVectorSearch (C:\Users\tebri\OneDrive\Documents\ts\open-canvas\src\rag\vector_store.ts:88:27)
+      at async retryWithBackoff (C:\Users\tebri\OneDrive\Documents\ts\open-canvas\src\agent\open-canvas\nodes\ragRetrieval.ts:25:14)
+      at async RunnableCallable.ragRetrievalNode (C:\Users\tebri\OneDrive\Documents\ts\open-canvas\src\agent\open-canvas\nodes\ragRetrieval.ts:142:30)
+      at async RunnableCallable.invoke (C:\Users\tebri\OneDrive\Documents\ts\open-canvas\node_modules\@langchain\langgraph\dist\utils.cjs:82:27)
+      at async RunnableSequence.invoke (C:\Users\tebri\OneDrive\Documents\ts\open-canvas\node_modules\@langchain\core\dist\runnables\base.cjs:1162:33)
+      at async _runWithRetry (C:\Users\tebri\OneDrive\Documents\ts\open-canvas\node_modules\@langchain\langgraph\dist\pregel\retry.cjs:99:22)
+      at async executeTasksWithRetry (C:\Users\tebri\OneDrive\Documents\ts\open-canvas\node_modules\@langchain\langgraph\dist\pregel\retry.cjs:72:29)
+      at async CompiledStateGraph._streamIterator (C:\Users\tebri\OneDrive\Documents\ts\open-canvas\node_modules\@langchain\langgraph\dist\pregel\index.cjs:764:48)
+      at async Object.pull (C:\Users\tebri\OneDrive\Documents\ts\open-canvas\node_modules\@langchain\core\dist\utils\stream.cjs:103:41),
+  level: 'error',
+  message: 'Vector search failed',
+  timestamp: '2025-02-08T17:04:08.604Z'
+}
+{
+  error: Error: Vector store is empty
+      at performVectorSearch (C:\Users\tebri\OneDrive\Documents\ts\open-canvas\src\rag\vector_store.ts:88:27)
+      at runNextTicks (node:internal/process/task_queues:65:5)
+      at process.processTimers (node:internal/timers:526:9)
+      at async retryWithBackoff (C:\Users\tebri\OneDrive\Documents\ts\open-canvas\src\agent\open-canvas\nodes\ragRetrieval.ts:25:14)
+      at async RunnableCallable.ragRetrievalNode (C:\Users\tebri\OneDrive\Documents\ts\open-canvas\src\agent\open-canvas\nodes\ragRetrieval.ts:142:30)
+      at async RunnableCallable.invoke (C:\Users\tebri\OneDrive\Documents\ts\open-canvas\node_modules\@langchain\langgraph\dist\utils.cjs:82:27)
+      at async RunnableSequence.invoke (C:\Users\tebri\OneDrive\Documents\ts\open-canvas\node_modules\@langchain\core\dist\runnables\base.cjs:1162:33)
+      at async _runWithRetry (C:\Users\tebri\OneDrive\Documents\ts\open-canvas\node_modules\@langchain\langgraph\dist\pregel\retry.cjs:99:22)
+      at async executeTasksWithRetry (C:\Users\tebri\OneDrive\Documents\ts\open-canvas\node_modules\@langchain\langgraph\dist\pregel\retry.cjs:72:29)
+      at async CompiledStateGraph._streamIterator (C:\Users\tebri\OneDrive\Documents\ts\open-canvas\node_modules\@langchain\langgraph\dist\pregel\index.cjs:764:48),
+  level: 'error',
+  message: 'Vector search failed',
+  timestamp: '2025-02-08T17:04:10.637Z'
+}
+{
+  error: 'Vector store is empty',
+  type: 'Error',
+  level: 'error',
+  message: 'Error during RAG retrieval',
+  timestamp: '2025-02-08T17:04:10.638Z'
+}

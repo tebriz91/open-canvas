@@ -12,6 +12,9 @@ import {
 import { ARTIFACT_TOOL_SCHEMA } from "./schemas";
 import { ArtifactV3 } from "@/types";
 import { createArtifactContent, formatNewArtifactPrompt } from "./utils";
+import { addDocumentsToVectorStore } from "@/rag/vector_store";
+import { Document } from "@langchain/core/documents";
+import logger from "@/lib/logger";
 
 /**
  * Generate a new artifact based on the user's query.
@@ -57,6 +60,36 @@ export const generateArtifact = async (
     currentIndex: 1,
     contents: [newArtifactContent],
   };
+
+  // Add the generated content to the vector store
+  try {
+    logger.info("Adding generated artifact to vector store", {
+      title: newArtifactContent.title,
+      contentLength: newArtifactContent.fullMarkdown?.length || 0,
+    });
+
+    const document = new Document({
+      pageContent: newArtifactContent.fullMarkdown || "",
+      metadata: {
+        title: newArtifactContent.title,
+        type: newArtifactContent.type,
+        index: newArtifactContent.index,
+        source: "generated_artifact",
+      },
+    });
+
+    await addDocumentsToVectorStore([document]);
+
+    logger.info("Successfully added artifact to vector store", {
+      title: newArtifactContent.title,
+    });
+  } catch (error) {
+    logger.error("Failed to add artifact to vector store", {
+      error: error instanceof Error ? error.message : String(error),
+      title: newArtifactContent.title,
+    });
+    // Continue even if vector store update fails
+  }
 
   return {
     artifact: newArtifact,

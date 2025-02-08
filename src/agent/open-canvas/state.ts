@@ -42,6 +42,10 @@ export const OpenCanvasGraphAnnotation = Annotation.Root({
    * The ID of the custom quick action to use.
    */
   customQuickActionId: Annotation<string | undefined>,
+  /**
+   * The context retrieved from RAG for rewriting artifacts.
+   */
+  context: Annotation<string | undefined>,
 });
 
 export type OpenCanvasGraphReturnType = Partial<

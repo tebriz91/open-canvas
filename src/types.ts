@@ -126,6 +126,8 @@ export interface CustomQuickAction {
 }
 
 export interface ArtifactV3 {
+  metadata: any;
+  id: any;
   currentIndex: number;
   contents: ArtifactMarkdownV3[];
 }

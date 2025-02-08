@@ -11,11 +11,19 @@ import { replyToGeneralInput } from "./nodes/replyToGeneralInput";
 import { generateTitleNode } from "./nodes/generateTitle";
 import { updateHighlightedText } from "./nodes/updateHighlightedText";
 import { OpenCanvasGraphAnnotation } from "./state";
+import { ragRetrievalNode } from "./nodes/ragRetrieval";
+import logger from "../../lib/logger";
 
 const routeNode = (state: typeof OpenCanvasGraphAnnotation.State) => {
   if (!state.next) {
+    logger.error("'next' state field not set in routeNode");
     throw new Error("'next' state field not set.");
   }
+
+  logger.info(`Routing to next node: ${state.next}`, {
+    currentState: state,
+    nextNode: state.next,
+  });
 
   return new Send(state.next, {
     ...state,
@@ -23,6 +31,7 @@ const routeNode = (state: typeof OpenCanvasGraphAnnotation.State) => {
 };
 
 const cleanState = (_: typeof OpenCanvasGraphAnnotation.State) => {
+  logger.debug("Cleaning state, resetting to default inputs");
   return {
     ...DEFAULT_INPUTS,
   };
@@ -36,10 +45,18 @@ const cleanState = (_: typeof OpenCanvasGraphAnnotation.State) => {
 const conditionallyGenerateTitle = (
   state: typeof OpenCanvasGraphAnnotation.State
 ) => {
-  if (state.messages.length > 2) {
-    // Do not generate if there are more than two messages (meaning it's not the first human-AI conversation)
+  const messageCount = state.messages.length;
+  logger.info(
+    `Checking if title generation is needed. Message count: ${messageCount}`
+  );
+
+  if (messageCount > 2) {
+    logger.debug(
+      "Skipping title generation - conversation already has more than 2 messages"
+    );
     return END;
   }
+  logger.info("Initiating title generation for new conversation");
   return "generateTitle";
 };
 
@@ -58,6 +75,7 @@ const builder = new StateGraph(OpenCanvasGraphAnnotation)
   .addNode("cleanState", cleanState)
   .addNode("reflect", reflectNode)
   .addNode("generateTitle", generateTitleNode)
+  .addNode("ragRetrieval", ragRetrievalNode)
   // Initial router
   .addConditionalEdges("generatePath", routeNode, [
     "rewriteArtifactTheme",
@@ -66,6 +84,7 @@ const builder = new StateGraph(OpenCanvasGraphAnnotation)
     "rewriteArtifact",
     "customAction",
     "updateHighlightedText",
+    "ragRetrieval",
   ])
   // Edges
   .addEdge("generateArtifact", "generateFollowup")
@@ -73,6 +92,7 @@ const builder = new StateGraph(OpenCanvasGraphAnnotation)
   .addEdge("rewriteArtifact", "generateFollowup")
   .addEdge("rewriteArtifactTheme", "generateFollowup")
   .addEdge("customAction", "generateFollowup")
+  .addEdge("ragRetrieval", "rewriteArtifact")
   // End edges
   .addEdge("replyToGeneralInput", "cleanState")
   // Only reflect if an artifact was generated/updated.

@@ -86,6 +86,8 @@ export const UPDATE_ENTIRE_ARTIFACT_PROMPT = `Вы - AI-помощник для 
 </reflections>
 
 Внесите необходимые изменения в документ в соответствии с запросом юриста.
+{updateMetaPrompt}
+{context}
 
 Соблюдайте следующие правила и рекомендации:
 <rules-guidelines>

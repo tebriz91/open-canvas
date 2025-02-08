@@ -167,6 +167,12 @@ export function CustomQuickActions(props: CustomQuickActionsProps) {
     }
   };
 
+  const handleRagRewriteClick = async () => {
+    await props.streamMessage({
+      customQuickActionId: "rag_rewrite",
+    });
+  };
+
   return (
     <DropdownMenu
       open={open}
@@ -237,6 +243,16 @@ export function CustomQuickActions(props: CustomQuickActionsProps) {
         >
           <CirclePlus className="w-4 h-4" />
           <TighterText className="font-medium">New</TighterText>
+        </DropdownMenuItem>
+        <DropdownMenuItem
+          disabled={props.isTextSelected}
+          onSelect={async () => {
+            await handleRagRewriteClick();
+          }}
+          className="flex items-center justify-start gap-1"
+        >
+          <WandSparkles className="w-4 h-4" />
+          <TighterText className="font-medium">RAG Rewrite</TighterText>
         </DropdownMenuItem>
       </DropdownMenuContent>
       <NewCustomQuickActionDialog

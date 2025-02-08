@@ -10,7 +10,7 @@ This step focuses on the **Indexing** phase, preparing your documents for retrie
 
 ```typescript
 // src/rag/document_processing.ts
-import { RecursiveCharacterTextSplitter } from "@langchain/text-splitter";
+import { RecursiveCharacterTextSplitter } from "@langchain/textsplitters";
 import { Document } from "@langchain/core/documents";
 
 export async function processDocument(
@@ -191,7 +191,7 @@ const builder = new StateGraph(OpenCanvasGraphAnnotation)
   .addEdge("rewriteArtifact", "generateFollowup")
   .addEdge("rewriteArtifactTheme", "generateFollowup")
   .addEdge("customAction", "generateFollowup")
-  .addEdge("ragRetrieval", "generateFollowup")
+  .addEdge("ragRetrieval", "rewriteArtifact")
 
   // End edges
   .addEdge("replyToGeneralInput", "cleanState")

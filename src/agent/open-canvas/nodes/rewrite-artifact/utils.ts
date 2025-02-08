@@ -6,6 +6,7 @@ import {
 } from "../../prompts";
 import { OpenCanvasGraphAnnotation } from "../../state";
 import { ToolCall } from "@langchain/core/messages/tool";
+import { HumanMessage } from "@langchain/core/messages";
 
 export const validateState = (
   state: typeof OpenCanvasGraphAnnotation.State
@@ -17,11 +18,19 @@ export const validateState = (
     throw new Error("No artifact found");
   }
 
-  const recentHumanMessage = state.messages.findLast(
-    (message) => message.getType() === "human"
-  );
-  if (!recentHumanMessage) {
-    throw new Error("No recent human message found");
+  let recentHumanMessage;
+  // For RAG rewrite, create a synthetic human message if none exists
+  if (state.customQuickActionId === "rag_rewrite") {
+    recentHumanMessage = new HumanMessage({
+      content: "Please rewrite this using the retrieved context to improve it.",
+    });
+  } else {
+    recentHumanMessage = state.messages.findLast(
+      (message) => message.getType() === "human"
+    );
+    if (!recentHumanMessage) {
+      throw new Error("No recent human message found");
+    }
   }
 
   return { currentArtifactContent, recentHumanMessage };
@@ -43,6 +52,7 @@ interface BuildPromptArgs {
   memoriesAsString: string;
   isNewType: boolean;
   artifactMetaToolCall: ToolCall | undefined;
+  context?: string;
 }
 
 export const buildPrompt = ({
@@ -50,15 +60,20 @@ export const buildPrompt = ({
   memoriesAsString,
   isNewType,
   artifactMetaToolCall,
+  context,
 }: BuildPromptArgs) => {
   const metaPrompt = isNewType ? buildMetaPrompt(artifactMetaToolCall) : "";
+  const contextPrompt = context
+    ? `\n\nРелеантная информация для улучшения контента:\n${context}`
+    : "";
 
   return UPDATE_ENTIRE_ARTIFACT_PROMPT.replace(
     "{artifactContent}",
     artifactContent
   )
     .replace("{reflections}", memoriesAsString)
-    .replace("{updateMetaPrompt}", metaPrompt);
+    .replace("{updateMetaPrompt}", metaPrompt)
+    .replace("{context}", contextPrompt);
 };
 
 interface CreateNewArtifactContentArgs {
