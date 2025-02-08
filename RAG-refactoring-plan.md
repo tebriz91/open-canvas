@@ -1,20 +1,10 @@
 # Implementing Simple RAG in Open Canvas
 
-This guide outlines the steps to implement a simple Retrieval-Augmented Generation (RAG) system in the Open Canvas application, following the LangChain documentation and utilizing the existing codebase.
+This guide outlines the steps to implement Retrieval-Augmented Generation (RAG) system in the application, following the LangChain documentation and utilizing the existing codebase.
 
 ## Step-by-step plan
 
-### Step 1: Install Necessary Dependencies
-
-First, ensure you have the required LangChain packages for RAG. Check your `package.json` file and add the following if they are missing. You can run the following command in your terminal:
-
-```bash
-yarn add @langchain/openai @langchain/core @langchain/text-splitter @langchain/vectorstores @langchain/document_loaders @langchain/langgraph
-```
-
-After running this, your `package.json` should include these new dependencies.
-
-### Step 2: Create Document Loading and Splitting Logic (Indexing Phase)
+### Step 1: Create Document Loading and Splitting Logic (Indexing Phase)
 
 This step focuses on the **Indexing** phase, preparing your documents for retrieval.
 
@@ -58,7 +48,7 @@ This code snippet defines a function `processDocument` that handles the **Splitt
 - Creates `Document` objects with the split content and metadata including the document name. Each chunk of text is encapsulated within a `Document` object, which is LangChain's standard format for handling text data.
 - Returns an array of `Document` objects.
 
-### Step 3: Set up Vector Store and Embedding Model (Indexing Phase - Storing)
+### Step 2: Set up Vector Store and Embedding Model (Indexing Phase - Storing)
 
 Continuing the **Indexing** phase, this step focuses on setting up the **Vector Store** and **Embedding Model**. We'll use `MemoryVectorStore` for simplicity in this example and `OpenAIEmbeddings`. For production, consider more persistent vector stores like Pinecone, Qdrant, or Chroma
 
@@ -73,7 +63,7 @@ let vectorStore: MemoryVectorStore | null = null;
 export async function initializeVectorStore() {
   if (!vectorStore) {
     vectorStore = await MemoryVectorStore.fromTexts(
-      ["Initial vector store."], // Initial text, can be replaced later
+      ["Initial vector store."], // Initial text (placeholder - will be replaced when actual documents are added)
       [],
       new OpenAIEmbeddings()
     );
@@ -102,11 +92,11 @@ This code sets up:
 - `addDocumentsToVectorStore`: Adds an array of `Document` objects to the vector store. This function takes an array of `Document` objects (output from `processDocument`) and adds them to the vector store, making them searchable.
 - `performVectorSearch`: Performs a similarity search in the vector store based on a query and returns the top `k` results. This function is the core of the retrieval process. It takes a query string and an optional number `k` (defaulting to a reasonable value if not provided), performs a similarity search against the vector store, and returns the top `k` most relevant documents.
 
-### Step 4: Integrate RAG into LangGraph Agent (Retrieval and Generation Phase)
+### Step 3: Integrate RAG into LangGraph Agent (Retrieval and Generation Phase)
 
 This step integrates the **Retrieval and Generation** phases into your LangGraph agent, leveraging the vector store created in the previous steps.
 
-#### Step 4.1: Add a new node for Retrieval
+#### Step 3.1: Add a new node for Retrieval
 
 Create a new node in your LangGraph graph for retrieval:
 
@@ -144,7 +134,7 @@ export const ragRetrievalNode = async (
 
 The ragRetrievalNode should pass the retrieved context to the rewriteArtifact node.
 
-#### Step 4.2: Update the Graph Definition
+#### Step 3.2: Update the Graph Definition
 
 Modify your graph definition in `src/agent/open-canvas/index.ts` to include the new `ragRetrievalNode` and connect it in the graph flow.
 
@@ -217,7 +207,7 @@ const builder = new StateGraph(OpenCanvasGraphAnnotation)
 export const graph = builder.compile().withConfig({ runName: "open_canvas" });
 ```
 
-#### Step 4.3: Modify `rewriteArtifact` Node
+#### Step 3.3: Modify `rewriteArtifact` Node
 
 Incorporate the context from the state into the prompt used to rewrite the artifact.
 
@@ -297,7 +287,7 @@ export const rewriteArtifact = async (
 };
 ```
 
-#### Step 4.4: Update `generatePath` Node to Route to `ragRetrievalNode`
+#### Step 3.4: Update `generatePath` Node to Route to `ragRetrievalNode`
 
 Modify `generatePath` node (`src/agent/open-canvas/nodes/generatePath.ts`). Instead of routing all general inputs to ragRetrievalNode, we'll route to it only when a specific customQuickActionId is present in the state. This customQuickActionId will correspond to the "RAG Rewrite" action.
 
@@ -346,6 +336,97 @@ export const generatePath = async (
 };
 ```
 
-### Step 5: Frontend Integration
+### Step 4: Frontend Integration
 
 Add a "RAG Rewrite" quick action to your UI. When this action is triggered, set state.customQuickActionId = "rag_rewrite" before sending the state to the graph.
+
+The primary files we'll be working with are:
+
+index.tsx: This component renders the custom quick actions in the artifact's action toolbar. We'll add the "RAG Rewrite" action here.
+GraphContext.tsx: This context provides the streamMessage function, which is used to send messages and state updates to the LangGraph.
+content-composer.tsx: This component contains the Thread component.
+
+#### Step 4.1: Add "RAG Rewrite" Quick Action to UI
+
+In index.tsx, locate the CustomQuickActions component.
+
+Within the DropdownMenuContent, add a new DropdownMenuItem for the "RAG Rewrite" action. It's best to place this alongside the other custom quick actions or pre-built actions.
+
+```tsx
+// src/components/artifacts/actions_toolbar/custom/index.tsx
+import { WandSparkles } from "lucide-react"; // Import icon
+
+// Inside the CustomQuickActions component, within the DropdownMenuContent:
+<DropdownMenuItem
+  disabled={props.isTextSelected}
+  onSelect={async () => {
+    await handleRagRewriteClick();
+  }}
+  className="flex items-center justify-start gap-1"
+>
+  <WandSparkles className="w-4 h-4" />
+  <TighterText className="font-medium">RAG Rewrite</TighterText>
+</DropdownMenuItem>;
+```
+
+#### Step 4.2: Implement handleRagRewriteClick Function
+
+In index.tsx, implement the handleRagRewriteClick function. This function will call streamMessage from the GraphContext to trigger the RAG rewrite.
+
+```tsx
+// src/components/artifacts/actions_toolbar/custom/index.tsx
+import { useGraphContext } from "@/contexts/GraphContext"; // Import GraphContext
+
+export function CustomQuickActions(props: CustomQuickActionsProps) {
+  const { streamMessage } = useGraphContext();
+
+  const handleRagRewriteClick = async () => {
+    await streamMessage({
+      customQuickActionId: "rag_rewrite",
+    });
+  };
+
+  // ... rest of the component
+}
+```
+
+#### Step 4.3: Update GraphInput Interface
+
+Ensure that the GraphInput interface in GraphContext.tsx includes customQuickActionId as an optional property.
+
+```tsx
+// src/contexts/GraphContext.tsx
+export interface GraphInput {
+  messages?: OpenAIChatMessageLog[];
+  artifactContent?: string;
+  language?: string;
+  artifactLength?: string;
+  regenerateWithEmojis?: boolean;
+  readingLevel?: string;
+  customQuickActionId?: string; // Add this line
+}
+```
+
+#### Step 4.4: Pass streamMessage to CustomQuickActions
+
+Make sure that the streamMessage function from the GraphContext is passed as a prop to the CustomQuickActions component in content-composer.tsx.
+
+```tsx
+// src/components/canvas/content-composer.tsx
+import { CustomQuickActions } from "@/components/artifacts/actions_toolbar/custom";
+
+<CustomQuickActions
+  user={userData.user}
+  assistantId={assistantsData.selectedAssistant?.assistant_id}
+  streamMessage={graphData.streamMessage} // Pass streamMessage
+  isTextSelected={graphData.selectedBlocks !== undefined}
+/>;
+```
+
+Explanation:
+
+- The DropdownMenuItem in CustomQuickActions provides the UI element for triggering the RAG rewrite.
+- The handleRagRewriteClick function is called when the "RAG Rewrite" menu item is selected. It calls streamMessage with customQuickActionId: "rag_rewrite".
+- The streamMessage function, provided by GraphContext, sends this information to the LangGraph, which then routes the request to the ragRetrievalNode based on the logic in generatePath.
+- The ragRetrievalNode retrieves relevant documents and updates the state with the context.
+- Finally, the rewriteArtifact node uses the retrieved context to rewrite the artifact.
