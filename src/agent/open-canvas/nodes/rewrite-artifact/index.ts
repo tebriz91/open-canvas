@@ -1,108 +1,148 @@
+/**
+ * Rewrite Artifact Node
+ * --------------------
+ * This module is responsible for rewriting and improving artifacts based on
+ * user queries and retrieved context. It uses an LLM to generate improved versions
+ * of documents while maintaining their essential information and structure.
+ *
+ * The rewrite process includes:
+ * - Validating input state and content
+ * - Handling metadata updates and type changes
+ * - Incorporating reflections and context
+ * - Generating improved content using LLM
+ * - Maintaining version history
+ */
+
 import {
   OpenCanvasGraphAnnotation,
   OpenCanvasGraphReturnType,
 } from "../../state";
 import { LangGraphRunnableConfig } from "@langchain/langgraph";
-import { getModelFromConfig } from "@/agent/utils";
-import { ARTIFACT_TOOL_SCHEMA } from "../generate-artifact/schemas";
-import { createArtifactContent } from "../generate-artifact/utils";
-import { addDocumentsToVectorStore } from "@/rag/vector_store";
-import { Document } from "@langchain/core/documents";
+import { optionallyUpdateArtifactMeta } from "./update-meta";
+import { createNewArtifactContent, validateState } from "./utils";
+import {
+  getFormattedReflections,
+  getModelFromConfig,
+  optionallyGetSystemPromptFromConfig,
+} from "@/agent/utils";
 import logger from "@/lib/logger";
 
+/**
+ * Main rewrite artifact node for the OpenCanvas graph.
+ *
+ * This node performs the following operations:
+ * 1. Validates state and extracts current content and messages
+ * 2. Updates artifact metadata if needed (type changes, etc.)
+ * 3. Incorporates reflections and context from previous interactions
+ * 4. Generates improved content using LLM with custom prompts
+ * 5. Maintains version history by appending new content
+ *
+ * @param state - Current state of the OpenCanvas graph, including messages and artifact
+ * @param config - Configuration for the graph node, used for model initialization
+ * @returns Updated graph state with the rewritten artifact appended to history
+ */
 export const rewriteArtifact = async (
   state: typeof OpenCanvasGraphAnnotation.State,
   config: LangGraphRunnableConfig
 ): Promise<OpenCanvasGraphReturnType> => {
-  const model = await getModelFromConfig(config, {
-    temperature: 0.5,
+  logger.info("Starting artifact rewrite process");
+
+  // Initialize model with tracking configuration
+  const smallModelWithConfig = (await getModelFromConfig(config)).withConfig({
+    runName: "rewrite_artifact_model_call",
+  });
+  logger.debug("Model initialized with configuration");
+
+  // Get reflections from previous interactions
+  const memoriesAsString = await getFormattedReflections(config);
+
+  // Validate state and extract required content
+  const { currentArtifactContent, recentHumanMessage } = validateState(state);
+
+  // Process metadata updates and track type changes
+  const artifactMetaToolCall = await optionallyUpdateArtifactMeta(
+    state,
+    config
+  );
+  const artifactType = artifactMetaToolCall?.args?.type;
+  const isNewType = artifactType !== currentArtifactContent.type;
+  logger.debug("Metadata update processed", {
+    hasMetaUpdate: !!artifactMetaToolCall,
+    isNewType,
+    newType: artifactType,
   });
 
-  const modelWithArtifactTool = model.bindTools([
-    {
-      name: "generate_artifact",
-      schema: ARTIFACT_TOOL_SCHEMA,
-    },
-  ]);
+  // Additional validation after metadata processing
+  if (!currentArtifactContent || !recentHumanMessage) {
+    logger.error("Missing required content or message");
+    throw new Error("Missing required content or message");
+  }
 
-  const systemPrompt = `Ты эксперт по переписыванию и улучшению документов. Твоя задача - переписать и улучшить текущий документ на основе предоставленного контекста и запроса пользователя.
+  // Track reflection context availability
+  logger.debug("Retrieved reflections", {
+    hasMemories: !!memoriesAsString,
+  });
 
-Контекст, полученный из поиска (RAG), для переписывания:
+  // Build the system prompt with all available context
+  const basePrompt = `Ты эксперт по переписыванию и улучшению документов.
+Внимательно изучите следующие данные:
+Запрос пользователя: ${recentHumanMessage?.content || "Нет запроса."}
+
+Контекст, полученный из поиска (RAG):
 ${state.context || "Нет дополнительного контекста."}
 
-Исходный документ для переписывания:
-${state.artifact?.contents[state.artifact.currentIndex - 1]?.fullMarkdown || ""}`;
+${memoriesAsString ? `Релевантные воспоминания:\n${memoriesAsString}` : ""}
 
-  logger.debug("Rewrite Artifact System Prompt", { prompt: systemPrompt });
+Исходный документ:
+${currentArtifactContent.fullMarkdown}
+
+Ваша задача – переписать и улучшить исходный документ c учетом всей предоставленной информации.`;
+
+  // Incorporate user-provided system prompt if available
+  const userSystemPrompt = optionallyGetSystemPromptFromConfig(config);
+  const fullSystemPrompt = userSystemPrompt
+    ? `${userSystemPrompt}\n${basePrompt}`
+    : basePrompt;
 
   try {
-    const response = await modelWithArtifactTool.invoke(
-      [
-        {
-          role: "system",
-          content: systemPrompt,
-        },
-        ...state.messages,
-      ],
-      { runName: "rewrite_artifact" }
-    );
-    logger.debug("Rewrite Artifact Model Response", { response });
+    // Generate improved content using the LLM
+    logger.info("Invoking model for artifact rewrite");
+    const response = await smallModelWithConfig.invoke([
+      { role: "system", content: fullSystemPrompt },
+      recentHumanMessage,
+    ]);
 
-    const newArtifactContent = createArtifactContent(response.tool_calls?.[0]);
+    // Create new artifact content with metadata and type handling
+    const newArtifactContent = createNewArtifactContent({
+      artifactType,
+      state,
+      currentArtifactContent,
+      artifactMetaToolCall,
+      newContent: response.content as string,
+    });
 
-    if (!state.artifact) {
-      throw new Error("No artifact to rewrite");
-    }
+    logger.debug("Created new artifact content", {
+      hasContent: !!newArtifactContent,
+      type: artifactType,
+    });
 
-    const newContents = [...state.artifact.contents];
-    newContents.push(newArtifactContent);
-
-    const newArtifact = {
+    // Append new version while maintaining history
+    const updatedArtifact = {
       ...state.artifact,
-      currentIndex: newContents.length,
-      contents: newContents,
+      currentIndex: state.artifact.contents.length + 1,
+      contents: [...state.artifact.contents, newArtifactContent],
     };
 
-    // Update the vector store with the rewritten content
-    try {
-      logger.info("Adding rewritten artifact to vector store", {
-        title: newArtifactContent.title,
-        contentLength: newArtifactContent.fullMarkdown?.length || 0,
-        version: newContents.length,
-      });
-
-      const document = new Document({
-        pageContent: newArtifactContent.fullMarkdown || "",
-        metadata: {
-          ...state.artifact.metadata,
-          version: newContents.length,
-          source: "rewritten_artifact",
-          artifact_id: state.artifact.id,
-        },
-      });
-
-      await addDocumentsToVectorStore([document]);
-
-      logger.info("Successfully added rewritten artifact to vector store", {
-        title: newArtifactContent.title,
-        version: newContents.length,
-      });
-    } catch (error) {
-      logger.error("Failed to add rewritten artifact to vector store", {
-        error: error instanceof Error ? error.message : String(error),
-        title: newArtifactContent.title,
-        version: newContents.length,
-      });
-      // Continue even if vector store update fails - Review if this is always desired behavior
-    }
-
+    logger.info("Successfully completed artifact rewrite");
     return {
-      artifact: newArtifact,
+      artifact: updatedArtifact,
+      messages: state.messages,
     };
   } catch (error) {
-    logger.error("Error rewriting artifact", {
+    // Log detailed error information for debugging
+    logger.error("Error during artifact rewrite", {
       error: error instanceof Error ? error.message : String(error),
-      prompt: systemPrompt,
+      stack: error instanceof Error ? error.stack : undefined,
     });
     throw error;
   }
