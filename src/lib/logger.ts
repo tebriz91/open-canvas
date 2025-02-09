@@ -1,16 +1,16 @@
 import winston from "winston";
 
 const logger = winston.createLogger({
-  level: process.env.LOG_LEVEL || "info",
+  level: process.env.LOG_LEVEL || "debug",
   format: winston.format.combine(
     winston.format.timestamp(),
     winston.format.json(),
     winston.format.prettyPrint()
   ),
   transports: [
-    // File transports are always included
-    new winston.transports.File({ filename: "logs/error.log", level: "error" }),
-    new winston.transports.File({ filename: "logs/combined.log" }),
+    // File transports are commented out to disable local logging
+    // new winston.transports.File({ filename: "logs/error.log", level: "error" }),
+    // new winston.transports.File({ filename: "logs/combined.log" }),
   ],
 });
 
