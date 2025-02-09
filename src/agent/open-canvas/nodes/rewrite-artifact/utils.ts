@@ -22,7 +22,8 @@ export const validateState = (
   // For RAG rewrite, create a synthetic human message if none exists
   if (state.customQuickActionId === "rag_rewrite") {
     recentHumanMessage = new HumanMessage({
-      content: "Please rewrite this using the retrieved context to improve it.",
+      content:
+        "Пожалуйста, перепишите это, используя извлеченный контекст для улучшения.",
     });
   } else {
     recentHumanMessage = state.messages.findLast(
@@ -38,7 +39,7 @@ export const validateState = (
 
 const buildMetaPrompt = (artifactMetaToolCall: ToolCall | undefined) => {
   const titleSection = artifactMetaToolCall?.args?.title
-    ? `And its title is (do NOT include this in your response):\n${artifactMetaToolCall.args.title}`
+    ? `И его название (не включайте в свой ответ):\n${artifactMetaToolCall.args.title}`
     : "";
 
   return OPTIONALLY_UPDATE_META_PROMPT.replace(
@@ -64,7 +65,7 @@ export const buildPrompt = ({
 }: BuildPromptArgs) => {
   const metaPrompt = isNewType ? buildMetaPrompt(artifactMetaToolCall) : "";
   const contextPrompt = context
-    ? `\n\nРелеантная информация для улучшения контента:\n${context}`
+    ? `\n\nРелевантная информация для улучшения контента:\n${context}`
     : "";
 
   return UPDATE_ENTIRE_ARTIFACT_PROMPT.replace(
