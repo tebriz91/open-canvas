@@ -1,85 +1,92 @@
-import { loadDocumentsIntoVectorStore } from "../rag/initialize";
-import { getVectorStoreStatus } from "../rag/vector_store";
+import { Document } from "@langchain/core/documents";
+import { clearVectorStore, addDocuments } from "../rag/vector_store";
+import fs from "fs/promises";
 import path from "path";
 import logger from "../lib/logger";
-import { Chroma } from "@langchain/community/vectorstores/chroma";
-import { OpenAIEmbeddings } from "@langchain/openai";
 
-// Script configuration
-const COLLECTION_NAME = "legal-documents";
-const CHROMA_URL = "http://localhost:8000";
+interface DocumentMetadata {
+  source: string;
+  path: string;
+}
 
-async function clearExistingDocuments(): Promise<void> {
+async function ensureDirectoryExists(dir: string) {
   try {
-    // Create a temporary client to delete the collection
-    const embeddings = new OpenAIEmbeddings();
-    const client = new Chroma(embeddings, {
-      collectionName: COLLECTION_NAME,
-      url: CHROMA_URL,
-    });
-
-    logger.info("Clearing existing documents from vector store");
-    await client.delete({ ids: [] }); // Delete all documents
-    logger.info("Successfully cleared vector store");
-  } catch (error) {
-    logger.warn("Failed to clear vector store", {
-      error: error instanceof Error ? error.message : String(error),
-    });
-    // Continue execution even if clearing fails
+    await fs.access(dir);
+  } catch {
+    await fs.mkdir(dir, { recursive: true });
+    logger.info("Created documents directory", { path: dir });
   }
 }
 
-async function main() {
+async function loadDocuments() {
   const documentsDir = path.join(process.cwd(), "documents");
 
   try {
-    logger.info("Starting document loading process", {
-      documentsDir,
-      cwd: process.cwd(),
-    });
-
-    // Get initial store status
-    const initialStatus = await getVectorStoreStatus();
-    logger.info("Initial vector store status", initialStatus);
+    // Ensure documents directory exists
+    await ensureDirectoryExists(documentsDir);
 
     // Clear existing documents
-    await clearExistingDocuments();
+    await clearVectorStore();
 
-    // Load new documents
-    await loadDocumentsIntoVectorStore(documentsDir);
+    // Read and filter text files
+    const files = await fs.readdir(documentsDir);
+    const textFiles = files.filter((file) => /\.(txt|md)$/.test(file));
 
-    // Get final store status
-    const finalStatus = await getVectorStoreStatus();
-    logger.info("Document loading completed successfully", {
-      initialDocumentCount: initialStatus.documentCount,
-      finalDocumentCount: finalStatus.documentCount,
-      documentsAdded: finalStatus.documentCount - initialStatus.documentCount,
+    if (textFiles.length === 0) {
+      logger.warn("No text or markdown files found in documents directory");
+      return;
+    }
+
+    // Process documents in parallel
+    const documents = await Promise.all(
+      textFiles.map(async (file) => {
+        try {
+          const content = await fs.readFile(
+            path.join(documentsDir, file),
+            "utf-8"
+          );
+          return new Document<DocumentMetadata>({
+            pageContent: content.trim(),
+            metadata: {
+              source: file,
+              path: path.join(documentsDir, file),
+            },
+          });
+        } catch (error) {
+          logger.error("Failed to read file", { file, error: String(error) });
+          return null;
+        }
+      })
+    );
+
+    // Filter out failed reads and empty documents
+    const validDocuments = documents.filter(
+      (doc): doc is Document<DocumentMetadata> =>
+        doc !== null && doc.pageContent.length > 0
+    );
+
+    if (validDocuments.length === 0) {
+      logger.warn("No valid documents found to process");
+      return;
+    }
+
+    // Add documents to vector store
+    await addDocuments(validDocuments);
+
+    logger.info("Document loading completed", {
+      totalFiles: textFiles.length,
+      validDocuments: validDocuments.length,
+      skippedFiles: textFiles.length - validDocuments.length,
     });
-
-    process.exit(0);
   } catch (error) {
-    logger.error("Document loading failed", {
-      error: error instanceof Error ? error.message : String(error),
-      stack: error instanceof Error ? error.stack : undefined,
-      documentsDir,
-    });
+    logger.error("Failed to load documents", { error: String(error) });
     process.exit(1);
   }
 }
 
-// Handle process termination
-process.on("SIGINT", () => {
-  logger.warn("Process interrupted, cleaning up...");
-  process.exit(1);
-});
-
-process.on("unhandledRejection", (error) => {
-  logger.error("Unhandled promise rejection", {
-    error: error instanceof Error ? error.message : String(error),
-    stack: error instanceof Error ? error.stack : undefined,
+if (require.main === module) {
+  loadDocuments().catch((error) => {
+    logger.error("Script failed", { error: String(error) });
+    process.exit(1);
   });
-  process.exit(1);
-});
-
-// Run the script
-main();
+}
