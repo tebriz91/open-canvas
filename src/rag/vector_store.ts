@@ -4,121 +4,113 @@ import { Document } from "@langchain/core/documents";
 import { RecursiveCharacterTextSplitter } from "langchain/text_splitter";
 import logger from "../lib/logger";
 
-// Singleton instance of the vector store for document storage and retrieval
+const COLLECTION_NAME = "documents";
+const CHROMA_URL = "http://localhost:8000";
+
 let vectorStore: Chroma | null = null;
-const COLLECTION_NAME = "legal-documents";
 
-// Configuration for text chunking to optimize for context windows
-const TEXT_SPLITTER_CONFIG = {
-  chunkSize: 2000, // Characters per chunk
-  chunkOverlap: 400, // Overlap between chunks to maintain context
-  separators: ["\n\n", "\n", " ", ""], // Priority order for splitting
-  keepSeparator: true, // Preserve document structure
-};
-
-// Initialize or return existing vector store instance
-export async function initializeVectorStore() {
+export async function initVectorStore(): Promise<Chroma> {
   if (!vectorStore) {
-    try {
-      const embeddings = new OpenAIEmbeddings();
-      vectorStore = new Chroma(embeddings, {
-        collectionName: COLLECTION_NAME,
-        url: "http://localhost:8000", // ChromaDB server URL
-        collectionMetadata: {
-          "hnsw:space": "cosine", // Use cosine similarity for vector matching
-        },
-      });
-    } catch (error) {
-      logger.error("Failed to initialize vector store", { error });
-      throw error;
-    }
+    const embeddings = new OpenAIEmbeddings();
+    vectorStore = new Chroma(embeddings, {
+      collectionName: COLLECTION_NAME,
+      url: CHROMA_URL,
+    });
   }
   return vectorStore;
 }
 
-// Process and store documents in the vector store with metadata
-export async function addDocumentsToVectorStore(documents: Document[]) {
+export async function addDocuments(documents: Document[]) {
   if (!documents || documents.length === 0) return;
 
-  // Split documents into smaller chunks for better retrieval
-  const textSplitter = new RecursiveCharacterTextSplitter(TEXT_SPLITTER_CONFIG);
-
-  const processedDocs: Document[] = [];
-  for (const doc of documents) {
-    // Split document content while preserving structure
-    const chunks = await textSplitter.splitText(doc.pageContent);
-
-    // Create new documents from chunks with enhanced metadata
-    const docChunks = chunks.map(
-      (chunk, index) =>
-        new Document({
-          pageContent: chunk,
-          metadata: {
-            ...doc.metadata,
-            artifact_id: doc.metadata?.artifact_id || "unknown", // Add artifact identifier
-            version: doc.metadata?.version || 1, // Track version history
-            chunk_index: index,
-          },
-        })
-    );
-    processedDocs.push(...docChunks);
-  }
-
-  const store = vectorStore ?? (await initializeVectorStore());
-  if (!store) throw new Error("Failed to initialize vector store");
+  const textSplitter = new RecursiveCharacterTextSplitter({
+    chunkSize: 1000,
+    chunkOverlap: 200,
+  });
 
   try {
+    const store = await initVectorStore();
+
+    const processedDocs = [];
+    for (const doc of documents) {
+      const chunks = await textSplitter.splitDocuments([doc]);
+      const docChunks = chunks.map(
+        (chunk, index) =>
+          new Document({
+            pageContent: chunk.pageContent,
+            metadata: {
+              ...chunk.metadata,
+              chunk_index: index,
+            },
+          })
+      );
+      processedDocs.push(...docChunks);
+    }
+
     await store.addDocuments(processedDocs);
-  } catch (_error) {
-    logger.error("Failed to add documents to vector store");
-    throw _error;
-  }
-}
-
-// Search for relevant documents based on query similarity
-export async function performVectorSearch(
-  query: string,
-  k: number = 3,
-  options?: { filter?: Record<string, any> }
-) {
-  if (!query) return [];
-
-  const store = vectorStore ?? (await initializeVectorStore());
-  if (!store) throw new Error("Failed to initialize vector store");
-
-  try {
-    // Verify store has documents
-    const totalDocs = await store.collection?.count();
-    if (!totalDocs) throw new Error("Vector store is empty");
-
-    // Perform semantic search with optional filtering
-    const results = await store.similaritySearch(query, k, options?.filter);
-
-    // Sort results by chunk_index to maintain document coherence
-    results.sort((a, b) => {
-      if (a.metadata.source === b.metadata.source) {
-        return (a.metadata.chunk_index || 0) - (b.metadata.chunk_index || 0);
-      }
-      return 0;
+    logger.debug("Documents added to vector store", {
+      count: processedDocs.length,
     });
-
-    return results;
   } catch (error) {
-    logger.error("Vector search failed", { error });
+    logger.error("Failed to add documents", { error: String(error) });
     throw error;
   }
 }
 
-// Get current status of vector store
-export async function getVectorStoreStatus() {
-  if (!vectorStore) {
-    return { isInitialized: false, documentCount: 0 };
-  }
+export async function searchDocuments(
+  query: string,
+  k: number = 3,
+  filter?: Record<string, any>
+) {
+  if (!query) return [];
 
   try {
-    const count = (await vectorStore.collection?.count()) ?? 0;
-    return { isInitialized: true, documentCount: count };
+    const store = await initVectorStore();
+    const results = await store.similaritySearch(query, k, filter);
+
+    // Sort by chunk index to maintain document coherence
+    return results.sort(
+      (a, b) => (a.metadata.chunk_index || 0) - (b.metadata.chunk_index || 0)
+    );
+  } catch (error) {
+    logger.error("Search failed", { error: String(error) });
+    throw error;
+  }
+}
+
+export async function clearVectorStore() {
+  try {
+    const store = await initVectorStore();
+    const collection = await store.collection;
+
+    if (!collection) {
+      logger.warn("No collection found to clear");
+      return;
+    }
+
+    // Get all document IDs
+    const count = await collection.count();
+    if (count > 0) {
+      const ids = await collection.get({ limit: count }).then((res) => res.ids);
+      if (ids.length > 0) {
+        await store.delete({ ids });
+        logger.info("Cleared vector store", { deletedCount: ids.length });
+      }
+    }
+
+    vectorStore = null;
+  } catch (error) {
+    logger.error("Failed to clear vector store", { error: String(error) });
+    throw error;
+  }
+}
+
+export async function getStoreStatus() {
+  try {
+    const store = await initVectorStore();
+    const count = (await store.collection?.count()) || 0;
+    return { initialized: true, documentCount: count };
   } catch (_error) {
-    return { isInitialized: false, documentCount: 0 };
+    return { initialized: false, documentCount: 0 };
   }
 }
