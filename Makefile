@@ -11,7 +11,7 @@ build:
 # Docker compose up
 up:
 	@echo "Starting docker compose..."
-	@docker compose up -d
+	@docker compose up
 
 # Docker compose down
 down:
