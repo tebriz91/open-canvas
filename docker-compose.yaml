@@ -28,7 +28,7 @@ services:
   langgraph-api:
     image: lg
     ports:
-      - "8123:8000"
+      - "54367:8000"
     depends_on:
       langgraph-redis:
         condition: service_healthy
