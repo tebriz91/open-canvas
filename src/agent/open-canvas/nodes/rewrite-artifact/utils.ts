@@ -56,6 +56,11 @@ interface BuildPromptArgs {
   context?: string;
 }
 
+/**
+ * Builds the prompt for artifact rewrite.
+ * Note: The context here is now produced by a legal-aware (semantic) text splitter
+ * that segments legal documents into coherent sections.
+ */
 export const buildPrompt = ({
   artifactContent,
   memoriesAsString,

@@ -30,16 +30,16 @@ import logger from "@/lib/logger";
 /**
  * Main rewrite artifact node for the OpenCanvas graph.
  *
- * This node performs the following operations:
- * 1. Validates state and extracts current content and messages
- * 2. Updates artifact metadata if needed (type changes, etc.)
- * 3. Incorporates reflections and context from previous interactions
- * 4. Generates improved content using LLM with custom prompts
- * 5. Maintains version history by appending new content
+ * This node:
+ * 1. Validates state and extracts current content and messages.
+ * 2. Updates artifact metadata if needed (type changes, etc.).
+ * 3. Incorporates reflections and context from previous interactions.
+ * 4. Generates improved content using LLM with custom prompts.
+ * 5. Maintains version history by appending new content.
  *
- * @param state - Current state of the OpenCanvas graph, including messages and artifact
- * @param config - Configuration for the graph node, used for model initialization
- * @returns Updated graph state with the rewritten artifact appended to history
+ * @param state - Current state of the OpenCanvas graph, including messages and artifact.
+ * @param config - Configuration for the graph node, used for model initialization.
+ * @returns Updated graph state with the rewritten artifact appended to history.
  */
 export const rewriteArtifact = async (
   state: typeof OpenCanvasGraphAnnotation.State,
@@ -83,12 +83,12 @@ export const rewriteArtifact = async (
     hasMemories: !!memoriesAsString,
   });
 
-  // Build the system prompt with all available context
+  // Build system prompt that now indicates the RAG context has been segmented with a legal-aware splitter.
   const basePrompt = `Ты эксперт по переписыванию и улучшению документов.
 Внимательно изучите следующие данные:
 Запрос пользователя: ${recentHumanMessage?.content || "Нет запроса."}
 
-Контекст, полученный из поиска (RAG):
+Контекст (с учетом юридической структуры), полученный из поиска (RAG):
 ${state.context || "Нет дополнительного контекста."}
 
 ${memoriesAsString ? `Релевантные воспоминания:\n${memoriesAsString}` : ""}
