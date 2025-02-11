@@ -9,6 +9,25 @@ const CHROMA_URL = "http://localhost:8000";
 
 let vectorStore: Chroma | null = null;
 
+// Custom LegalTextSplitter that respects legal document structure and semantic boundaries
+class LegalTextSplitter extends RecursiveCharacterTextSplitter {
+  constructor() {
+    super({
+      // Adjust chunk size/overlap for legal documents
+      chunkSize: 1500,
+      chunkOverlap: 300,
+      // Use custom separators to capture legal sections and articles before falling back to paragraphs and words.
+      separators: [
+        "\n\nРаздел", // Try to split at legal section headers
+        "\n\nСтатья", // or legal article headers
+        "\n\n", // Otherwise, on paragraph breaks
+        "\n", // then newlines,
+        " ", // and, lastly, on spaces.
+      ],
+    });
+  }
+}
+
 export async function initVectorStore(): Promise<Chroma> {
   if (!vectorStore) {
     const embeddings = new OpenAIEmbeddings();
@@ -23,10 +42,8 @@ export async function initVectorStore(): Promise<Chroma> {
 export async function addDocuments(documents: Document[]) {
   if (!documents || documents.length === 0) return;
 
-  const textSplitter = new RecursiveCharacterTextSplitter({
-    chunkSize: 1000,
-    chunkOverlap: 200,
-  });
+  // Use the custom LegalTextSplitter instead of a basic character splitter
+  const textSplitter = new LegalTextSplitter();
 
   try {
     const store = await initVectorStore();
@@ -41,6 +58,7 @@ export async function addDocuments(documents: Document[]) {
             metadata: {
               ...chunk.metadata,
               chunk_index: index,
+              // Optionally, if you can extract section names you may add it here (e.g. doc.metadata.section)
             },
           })
       );
@@ -48,7 +66,7 @@ export async function addDocuments(documents: Document[]) {
     }
 
     await store.addDocuments(processedDocs);
-    logger.debug("Documents added to vector store", {
+    logger.debug("Documents added to vector store with legal-aware chunking", {
       count: processedDocs.length,
     });
   } catch (error) {
