@@ -19,10 +19,10 @@ const MAX_CONTEXT_LENGTH = 8000;
  * Assembles context from retrieved documents by grouping and concatenating them.
  *
  * The function performs the following steps:
- * 1. Groups documents by their source
- * 2. Maintains document order within each source using chunk indices
+ * 1. Groups documents by their source or legal section if available
+ * 2. Maintains document order within each group using chunk indices
  * 3. Combines documents while respecting the maximum context length
- * 4. Formats the context with source information and separators
+ * 4. Formats the context with group (section/source) information and separators
  *
  * @param documents - Array of Document objects containing content and metadata
  * @returns Formatted string containing the assembled context
@@ -32,35 +32,34 @@ function assembleContext(documents: Document[]): string {
     documentCount: documents.length,
   });
 
-  // Group documents by their source to maintain logical organization
+  // Group documents by their legal section if available; otherwise, fallback to source.
   const docGroups = documents.reduce(
     (groups, doc) => {
-      const source = doc.metadata?.source || "unknown";
-      if (!groups[source]) groups[source] = [];
-      groups[source].push(doc);
+      const groupKey =
+        doc.metadata?.section || doc.metadata?.source || "unknown";
+      if (!groups[groupKey]) groups[groupKey] = [];
+      groups[groupKey].push(doc);
       return groups;
     },
     {} as Record<string, Document[]>
   );
 
-  // Documents are pre-sorted by chunk_index from vector_store.ts
-  logger.debug("Grouped documents by source", {
-    sourceCount: Object.keys(docGroups).length,
-    sources: Object.keys(docGroups),
+  logger.debug("Grouped documents by legal section/source", {
+    groupCount: Object.keys(docGroups).length,
+    groups: Object.keys(docGroups),
   });
 
   // Assemble context while respecting length limits
   const contextParts: string[] = [];
   let totalLength = 0;
 
-  // Process each source group, maintaining source attribution
-  for (const [source, docs] of Object.entries(docGroups)) {
-    const sourceContent = docs.map((doc) => doc.pageContent).join("\n\n");
+  for (const [groupKey, docs] of Object.entries(docGroups)) {
+    const groupContent = docs.map((doc) => doc.pageContent).join("\n\n");
 
-    // Check if adding this source's content would exceed the length limit
-    if (totalLength + sourceContent.length > MAX_CONTEXT_LENGTH) {
+    // Respect the maximum allowable context length
+    if (totalLength + groupContent.length > MAX_CONTEXT_LENGTH) {
       logger.debug("Reached maximum context length", {
-        source,
+        group: groupKey,
         skippedDocsCount: docs.length,
         currentLength: totalLength,
         maxLength: MAX_CONTEXT_LENGTH,
@@ -69,11 +68,11 @@ function assembleContext(documents: Document[]): string {
     }
 
     // Add source attribution and content
-    contextParts.push(`Source: ${source}\n\n${sourceContent}`);
-    totalLength += sourceContent.length;
-    logger.debug("Added source content to context", {
-      source,
-      addedDocsCount: docs.length,
+    contextParts.push(`Section/Source: ${groupKey}\n\n${groupContent}`);
+    totalLength += groupContent.length;
+    logger.debug("Added group content to context", {
+      group: groupKey,
+      docsCount: docs.length,
       newTotalLength: totalLength,
     });
   }
@@ -82,7 +81,7 @@ function assembleContext(documents: Document[]): string {
   const finalContext = contextParts.join("\n\n---\n\n");
   logger.debug("Assembled final context", {
     finalLength: finalContext.length,
-    sourceCount: contextParts.length,
+    groupCount: contextParts.length,
   });
   return finalContext;
 }
@@ -90,17 +89,14 @@ function assembleContext(documents: Document[]): string {
 /**
  * Main RAG (Retrieval-Augmented Generation) node for the OpenCanvas graph.
  *
- * This node performs the following operations:
- * 1. Extracts a query from either the last human message or artifact content
- * 2. Performs semantic search using the query to retrieve relevant documents
- * 3. Assembles the retrieved documents into a coherent context
- *
- * The assembled context is then passed to the next node (rewriteArtifact)
- * for use in generating or modifying content.
+ * This node:
+ * 1. Extracts the query from the latest human message.
+ * 2. Executes semantic search (with our legal-aware vector store) to return relevant legal document chunks.
+ * 3. Assembles the retrieved chunks preserving their legal coherence.
  *
  * @param state - Current state of the OpenCanvas graph
  * @param _config - Configuration for the graph node (unused)
- * @returns Updated graph state with retrieved context
+ * @returns Updated graph state with the assembled context
  */
 export const ragRetrievalNode = async (
   state: typeof OpenCanvasGraphAnnotation.State,
@@ -162,6 +158,7 @@ export const ragRetrievalNode = async (
       documentsFound: contextDocuments.length,
       documents: contextDocuments.map((doc) => ({
         source: doc.metadata?.source,
+        section: doc.metadata?.section,
         chunkIndex: doc.metadata?.chunk_index,
         contentLength: doc.pageContent.length,
       })),
@@ -202,7 +199,7 @@ export const ragRetrievalNode = async (
     // Handle and log any errors during retrieval
     logger.error("Error during RAG retrieval", {
       error: error instanceof Error ? error.message : String(error),
-      query: query.substring(0, 100) + "...", // Truncate long queries in logs
+      query: query.substring(0, 100) + "...",
       querySource,
       stack: error instanceof Error ? error.stack : undefined,
     });
